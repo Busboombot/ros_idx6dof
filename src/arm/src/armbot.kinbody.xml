@@ -1,0 +1,190 @@
+<Robot name="ArmBot">
+	<KinBody>
+		<Body name="table" type="static">
+			<Translation>4.375 0.0 12.875</Translation>
+			<Geom type="box">
+				<Translation>0 -18.5 0</Translation>
+				<Extents>16.875 18.5 22.375</Extents>
+        		<diffuseColor>0.3 0.05 0.3</diffuseColor>
+			</Geom>
+		</Body>
+
+		<Body name="waist" type="dynamic">
+			<Translation>0.0 0.01 0.0</Translation>
+			<Geom type="cylinder">
+				<rotationaxis>0 1 0 0</rotationaxis>
+				<Translation>0.0 1.5 0.0</Translation>
+				<radius>3.14961</radius>
+				<height>3.0</height>
+			</Geom>
+			<Geom type="box">
+				<Translation>-5.5 0.0 0.0</Translation>
+				<Extents>5.5 3.0 3.14961</Extents>
+			</Geom>
+			<Geom type="box">
+				<Translation>-8.25 9.0 0.0</Translation>
+				<Extents>3.25 9.0 3.14961</Extents>
+			</Geom>
+		</Body>
+		<Joint circular="true" name="waist" type="hinge">
+			<Body>Table</Body>
+			<Body>waist</Body>
+			<offsetfrom>waist</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 1 0</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<Body name="shoulderA" type="dynamic">
+			<offsetfrom>waist</offsetfrom>
+			<Translation>0.0 15.375 0.0</Translation>
+			<Geom type="box">
+				<Translation>-1.0 -3.75 -1.5</Translation>
+				<Extents>3.6875 7.375 3.375</Extents>
+			</Geom>
+		</Body>
+		<Joint circular="true" name="shoulderA" type="hinge">
+			<Body>waist</Body>
+			<Body>shoulderA</Body>
+			<offsetfrom>shoulderA</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>1 0 0</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<Body name="shoulderB" type="dynamic">
+			<offsetfrom>shoulderA</offsetfrom>
+			<Translation>0.0 0.0 -5.0</Translation>
+			<Geom type="box">
+				<Translation>0.0 2.5 -2.75</Translation>
+				<Extents>2.6875 3.75 2.625</Extents>
+			</Geom>
+			<Geom type="box">
+				<Translation>0.0 8.75 -3.25</Translation>
+				<Extents>2.6875 4.875 2.25</Extents>
+			</Geom>
+		</Body>
+		<Joint circular="true" name="shoulderB" type="hinge">
+			<Body>shoulderA</Body>
+			<Body>shoulderB</Body>
+			<offsetfrom>shoulderB</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 0 1</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<Body name="elbow" type="dynamic">
+			<offsetfrom>shoulderB</offsetfrom>
+			<Translation>0.0 12 0.0</Translation>
+			<Geom type="box">
+				<Translation>0.0 4 0.0</Translation>
+				<Extents>3 6 1</Extents>
+			</Geom>
+		</Body>
+		
+		<Joint circular="true" name="elbow" type="hinge">
+			<Body>shoulderB</Body>
+			<Body>elbow</Body>
+			<offsetfrom>elbow</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 0 1</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<Body name="wristA" type="dynamic">
+			<offsetfrom>elbow</offsetfrom>
+			<Translation>0.0 11 2.0</Translation>
+			<Geom type="box">
+				<Translation>0.0 2 1</Translation>
+				<Extents>2.5 4 1.25</Extents>
+			</Geom>
+		</Body>
+		
+		<Joint circular="true" name="wristA" type="hinge">
+			<Body>elbow</Body>
+			<Body>wristA</Body>
+			<offsetfrom>wristA</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 0 1</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<Body name="wristB" type="dynamic">
+			<offsetfrom>wristA</offsetfrom>
+			<Translation>0.0 0.0 0.0</Translation>
+			<Geom type="cylinder">
+				<rotationaxis>0 1 0</rotationaxis>
+				<radius>1</radius>
+				<height>4</height>
+				<Translation>0 5 1</Translation>
+			</Geom>
+		</Body>
+		
+		<Joint circular="true" name="wristB" type="hinge">
+			<Body>wristA</Body>
+			<Body>wristB</Body>
+			<offsetfrom>wristB</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 1 0</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<!-- OpenRAVE is strange - so I had to put on a ghostly manipulator on the end. Hm?-->
+		<!-- So, until there's an actual manipulator... just leave these on. They do nothing special other than make it work-->
+		
+		<Body name="RC" type="dynamic">
+			<offsetfrom>wristB</offsetfrom>
+			<Translation>0 0 0</Translation>
+		</Body>
+		
+		<Body name="LC" type="dynamic">
+			<offsetfrom>wristB</offsetfrom>
+			<Translation>0 0 0</Translation>
+		</Body>
+		
+		<Joint name="rj" type="hinge">
+			<Body>wristB</Body>
+			<Body>RC</Body>
+			<offsetfrom>RC</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 1 0</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+		<Joint name="lj" type="hinge">
+			<Body>wristB</Body>
+			<Body>LC</Body>
+			<offsetfrom>LC</offsetfrom>
+			<weight>1</weight>
+			<limitsdeg>-180 180</limitsdeg>
+			<axis>0 1 0</axis>
+			<maxvel>3</maxvel>
+			<resolution>1</resolution>
+		</Joint>
+		
+	</KinBody>
+	
+	<Manipulator name="RC_LC">
+		<effector>wristB</effector>
+		<base>table</base>
+		<joints>rj lj</joints>
+		<closingdirection>1 1</closingdirection>
+   		<direction>1 0 0</direction>
+   		<Translation>0 0 0</Translation>
+	</Manipulator>
+	
+</Robot>
