@@ -1,4 +1,4 @@
 # generated from genmsg/cmake/pkg-msg-paths.cmake.develspace.in
 
-set(arm_MSG_INCLUDE_DIRS "/home/ubuntu/ros_idx6dof/src/arm/msg")
+set(arm_MSG_INCLUDE_DIRS "/home/drew/ros_idx6dof/src/arm/msg")
 set(arm_MSG_DEPENDENCIES std_msgs)
