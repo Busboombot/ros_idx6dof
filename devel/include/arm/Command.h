@@ -24,22 +24,27 @@ struct Command_
   typedef Command_<ContainerAllocator> Type;
 
   Command_()
-    : cmd(0)
-    , params()  {
+    : switch_no(0)
+    , switch_pos(0)
+    , switch_name()  {
     }
   Command_(const ContainerAllocator& _alloc)
-    : cmd(0)
-    , params(_alloc)  {
+    : switch_no(0)
+    , switch_pos(0)
+    , switch_name(_alloc)  {
   (void)_alloc;
     }
 
 
 
-   typedef uint8_t _cmd_type;
-  _cmd_type cmd;
+   typedef uint8_t _switch_no_type;
+  _switch_no_type switch_no;
 
-   typedef std::vector<int32_t, typename ContainerAllocator::template rebind<int32_t>::other >  _params_type;
-  _params_type params;
+   typedef uint8_t _switch_pos_type;
+  _switch_pos_type switch_pos;
+
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _switch_name_type;
+  _switch_name_type switch_name;
 
 
 
@@ -75,7 +80,7 @@ namespace message_traits
 
 
 // BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
-// {'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'arm': ['/home/ubuntu/ros_idx6dof/src/arm/msg']}
+// {'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'arm': ['/home/pi/ros_idx6dof/src/arm/msg']}
 
 // !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
@@ -118,12 +123,12 @@ struct MD5Sum< ::arm::Command_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "ac224fe040657a122ab633b7a19a6e0a";
+    return "ef707ea7563d7ccdfdd8bb776d91afd2";
   }
 
   static const char* value(const ::arm::Command_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0xac224fe040657a12ULL;
-  static const uint64_t static_value2 = 0x2ab633b7a19a6e0aULL;
+  static const uint64_t static_value1 = 0xef707ea7563d7ccdULL;
+  static const uint64_t static_value2 = 0xfdd8bb776d91afd2ULL;
 };
 
 template<class ContainerAllocator>
@@ -142,9 +147,9 @@ struct Definition< ::arm::Command_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "uint8 cmd\n\
-int32[] params\n\
-\n\
+    return "uint8 switch_no\n\
+uint8 switch_pos\n\
+string switch_name\n\
 ";
   }
 
@@ -163,8 +168,9 @@ namespace serialization
   {
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
-      stream.next(m.cmd);
-      stream.next(m.params);
+      stream.next(m.switch_no);
+      stream.next(m.switch_pos);
+      stream.next(m.switch_name);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER;
@@ -183,14 +189,12 @@ struct Printer< ::arm::Command_<ContainerAllocator> >
 {
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::arm::Command_<ContainerAllocator>& v)
   {
-    s << indent << "cmd: ";
-    Printer<uint8_t>::stream(s, indent + "  ", v.cmd);
-    s << indent << "params[]" << std::endl;
-    for (size_t i = 0; i < v.params.size(); ++i)
-    {
-      s << indent << "  params[" << i << "]: ";
-      Printer<int32_t>::stream(s, indent + "  ", v.params[i]);
-    }
+    s << indent << "switch_no: ";
+    Printer<uint8_t>::stream(s, indent + "  ", v.switch_no);
+    s << indent << "switch_pos: ";
+    Printer<uint8_t>::stream(s, indent + "  ", v.switch_pos);
+    s << indent << "switch_name: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.switch_name);
   }
 };
 

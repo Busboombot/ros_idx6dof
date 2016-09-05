@@ -1,3 +1,3 @@
-uint8 cmd
-int32[] params
-
+uint8 switch_no
+uint8 switch_pos
+string switch_name

@@ -3,9 +3,5 @@
   (:export
    "<COMMAND>"
    "COMMAND"
-   "<SWITCHPOS>"
-   "SWITCHPOS"
-   "<SWITCHES>"
-   "SWITCHES"
   ))
 

@@ -14,71 +14,73 @@
 
 (defclass arm::Command
   :super ros::object
-  :slots (_cmd _params ))
+  :slots (_switch_no _switch_pos _switch_name ))
 
 (defmethod arm::Command
   (:init
    (&key
-    ((:cmd __cmd) 0)
-    ((:params __params) (make-array 0 :initial-element 0 :element-type :integer))
+    ((:switch_no __switch_no) 0)
+    ((:switch_pos __switch_pos) 0)
+    ((:switch_name __switch_name) "")
     )
    (send-super :init)
-   (setq _cmd (round __cmd))
-   (setq _params __params)
+   (setq _switch_no (round __switch_no))
+   (setq _switch_pos (round __switch_pos))
+   (setq _switch_name (string __switch_name))
    self)
-  (:cmd
-   (&optional __cmd)
-   (if __cmd (setq _cmd __cmd)) _cmd)
-  (:params
-   (&optional __params)
-   (if __params (setq _params __params)) _params)
+  (:switch_no
+   (&optional __switch_no)
+   (if __switch_no (setq _switch_no __switch_no)) _switch_no)
+  (:switch_pos
+   (&optional __switch_pos)
+   (if __switch_pos (setq _switch_pos __switch_pos)) _switch_pos)
+  (:switch_name
+   (&optional __switch_name)
+   (if __switch_name (setq _switch_name __switch_name)) _switch_name)
   (:serialization-length
    ()
    (+
-    ;; uint8 _cmd
+    ;; uint8 _switch_no
     1
-    ;; int32[] _params
-    (* 4    (length _params)) 4
+    ;; uint8 _switch_pos
+    1
+    ;; string _switch_name
+    4 (length _switch_name)
     ))
   (:serialize
    (&optional strm)
    (let ((s (if strm strm
               (make-string-output-stream (send self :serialization-length)))))
-     ;; uint8 _cmd
-       (write-byte _cmd s)
-     ;; int32[] _params
-     (write-long (length _params) s)
-     (dotimes (i (length _params))
-       (write-long (elt _params i) s)
-       )
+     ;; uint8 _switch_no
+       (write-byte _switch_no s)
+     ;; uint8 _switch_pos
+       (write-byte _switch_pos s)
+     ;; string _switch_name
+       (write-long (length _switch_name) s) (princ _switch_name s)
      ;;
      (if (null strm) (get-output-stream-string s))))
   (:deserialize
    (buf &optional (ptr- 0))
-   ;; uint8 _cmd
-     (setq _cmd (sys::peek buf ptr- :char)) (incf ptr- 1)
-   ;; int32[] _params
-   (let (n)
-     (setq n (sys::peek buf ptr- :integer)) (incf ptr- 4)
-     (setq _params (instantiate integer-vector n))
-     (dotimes (i n)
-     (setf (elt _params i) (sys::peek buf ptr- :integer)) (incf ptr- 4)
-     ))
+   ;; uint8 _switch_no
+     (setq _switch_no (sys::peek buf ptr- :char)) (incf ptr- 1)
+   ;; uint8 _switch_pos
+     (setq _switch_pos (sys::peek buf ptr- :char)) (incf ptr- 1)
+   ;; string _switch_name
+     (let (n) (setq n (sys::peek buf ptr- :integer)) (incf ptr- 4) (setq _switch_name (subseq buf ptr- (+ ptr- n))) (incf ptr- n))
    ;;
    self)
   )
 
-(setf (get arm::Command :md5sum-) "ac224fe040657a122ab633b7a19a6e0a")
+(setf (get arm::Command :md5sum-) "ef707ea7563d7ccdfdd8bb776d91afd2")
 (setf (get arm::Command :datatype-) "arm/Command")
 (setf (get arm::Command :definition-)
-      "uint8 cmd
-int32[] params
-
-
+      "uint8 switch_no
+uint8 switch_pos
+string switch_name
 ")
 
 
 
-(provide :arm/Command "ac224fe040657a122ab633b7a19a6e0a")
+(provide :arm/Command "ef707ea7563d7ccdfdd8bb776d91afd2")
 
 
