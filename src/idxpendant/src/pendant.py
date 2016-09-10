@@ -10,39 +10,7 @@ UP = 1
 OFF = 0
 DOWN = -1
 
-def find_pendant(ignores=None):
-    
-    from pyudev import Context
-    from serial import Serial
-    from time import sleep
 
-    devices = Context().list_devices(subsystem='tty', ID_BUS='usb')
-
-    for device in devices:
-    
-        # Assume that all of our Arduinos implement the id command
-        if device['ID_MODEL'] != 'Arduino_Uno':
-            continue
-
-        dn = device.device_node
-
-        if ignores and dn in ignores:
-            continue
-
-        ser = Serial(dn, timeout=0.1, baudrate=115200)
-
-        for i in range(20):
-            ser.write('id\r\n')
-            ser.flushInput()
-            ser.flushOutput()
-            r = ser.readline().strip() 
-            print r
-            if r == 'pendant':
-                ser.close()
-                return dn
-            sleep(.1)
-
-    return False
     
 
 class IDXPendant(object):
