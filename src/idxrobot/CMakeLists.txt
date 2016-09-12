@@ -1,17 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(idxpendant)
+project(idxrobot)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
 find_package(catkin REQUIRED COMPONENTS
+  idxpendant
   roscpp
   rospy
   std_msgs
-  message_generation
   rosserial_arduino
   rosserial_client
 )
+
+
+
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -47,18 +52,18 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
+
 add_message_files(
    FILES
-   SwitchPos.msg
+   MotionCommand.msg
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   SwitchSrv.srv
-   SwitchesSrv.srv
+# add_service_files(
+#   FILES
+#   Service1.srv
 #   Service2.srv
-)
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -68,24 +73,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs
-)
-
-rosserial_generate_ros_lib(
-  PACKAGE rosserial_arduino
-  SCRIPT make_libraries.py
-)
-
-rosserial_configure_client(
-  DIRECTORY firmware
-  TOOLCHAIN_FILE ${ROSSERIAL_ARDUINO_TOOLCHAIN}
-)
-
-rosserial_add_client_target(firmware pendant ALL)
-rosserial_add_client_target(firmware pendant-upload)
-
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -116,10 +107,11 @@ rosserial_add_client_target(firmware pendant-upload)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES idxpendant
-  CATKIN_DEPENDS message_runtime roscpp rospy std_msgs message_generation
+#  LIBRARIES idxrobot
+#  CATKIN_DEPENDS idxpendant roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -135,29 +127,45 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(idxpendant
-#   src/${PROJECT_NAME}/idxpendant.cpp
+# add_library(idxrobot
+#   src/${PROJECT_NAME}/idxrobot.cpp
 # )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(idxpendant ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(idxrobot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(idxpendant_node src/idxpendant_node.cpp)
+# add_executable(idxrobot_node src/idxrobot_node.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(idxpendant_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(idxrobot_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(idxpendant_node
+# target_link_libraries(idxrobot_node
 #   ${catkin_LIBRARIES}
 # )
 
 
+##
+## ROSSerial
+##
 
+
+rosserial_generate_ros_lib(
+  PACKAGE rosserial_arduino
+  SCRIPT make_libraries.py
+)
+
+rosserial_configure_client(
+  DIRECTORY firmware
+  TOOLCHAIN_FILE ${ROSSERIAL_ARDUINO_TOOLCHAIN}
+)
+
+rosserial_add_client_target(firmware idxrobot ALL)
+rosserial_add_client_target(firmware idxrobot-upload)
 
 #############
 ## Install ##
@@ -174,7 +182,7 @@ include_directories(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS idxpendant idxpendant_node
+# install(TARGETS idxrobot idxrobot_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -199,7 +207,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_idxpendant.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_idxrobot.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
