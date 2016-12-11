@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# ESB: A copy of the origin SerialCLient.py file, because the original 
+# ESB: A copy of the original SerialClient.py file, because the original 
 # one use old style classess and is hard to extend. 
 
 #####################################################################
@@ -423,8 +423,10 @@ class SerialClient:
                 if (self.synced == True):
                     rospy.logerr("Lost sync with device, restarting...")
                 else:
-                    rospy.logerr("Unable to sync with device; possible link problem or link software version mismatch such as hydro rosserial_python with groovy Arduino")
-                    raise SerialError("Unable to sync with device; possible link problem or link software version mismatch")
+                    rospy.logerr("Unable to sync with device; possible link problem or link software "
+                                 "version mismatch such as hydro rosserial_python with groovy Arduino")
+                    raise SerialError("Unable to sync with device; possible link problem or link "
+                                "software version mismatch")
                     
                 self.lastsync_lost = rospy.Time.now()
                 self.sendDiagnostics(diagnostic_msgs.msg.DiagnosticStatus.ERROR, "no sync with device")
@@ -446,9 +448,14 @@ class SerialClient:
 
                 flag[1] = self.tryRead(1)
                 if ( flag[1] != self.protocol_ver):
-                    self.sendDiagnostics(diagnostic_msgs.msg.DiagnosticStatus.ERROR, "Mismatched protocol version in packet: lost sync or rosserial_python is from different ros release than the rosserial client")
-                    rospy.logerr("Mismatched protocol version in packet: lost sync or rosserial_python is from different ros release than the rosserial client")
-                    protocol_ver_msgs = {'\xff': 'Rev 0 (rosserial 0.4 and earlier)', '\xfe': 'Rev 1 (rosserial 0.5+)', '\xfd': 'Some future rosserial version'}
+                    self.sendDiagnostics(diagnostic_msgs.msg.DiagnosticStatus.ERROR, 
+                        "Mismatched protocol version in packet: lost sync or rosserial_python "
+                        "is from different ros release than the rosserial client")
+                    rospy.logerr("Mismatched protocol version in packet: lost sync or rosserial_python "
+                        "is from different ros release than the rosserial client")
+                    protocol_ver_msgs = {'\xff': 'Rev 0 (rosserial 0.4 and earlier)', 
+                                         '\xfe': 'Rev 1 (rosserial 0.5+)', 
+                                         '\xfd': 'Some future rosserial version'}
                     if (flag[1] in protocol_ver_msgs):
                         found_ver_msg = 'Protocol version of client is ' + protocol_ver_msgs[flag[1]]
                     else:
@@ -470,6 +477,7 @@ class SerialClient:
                 topic_id_header = self.tryRead(2)
                 topic_id, = struct.unpack("<h", topic_id_header)
 
+                msg = ""
                 try:
                     msg = self.tryRead(msg_length)
                 except IOError:
@@ -492,7 +500,7 @@ class SerialClient:
                     
                     rospy.sleep(0.001)
                 else:
-                    rospy.loginfo("wrong checksum for topic id and msg")
+                    rospy.loginfo("wrong checksum for topic id and msg; %d" % checksum)
 
             except IOError:
                 # One of the read calls had an issue. Just to be safe, request that the client

@@ -78,14 +78,6 @@ rosserial_generate_ros_lib(
   SCRIPT make_libraries.py
 )
 
-rosserial_configure_client(
-  DIRECTORY firmware
-  TOOLCHAIN_FILE ${ROSSERIAL_ARDUINO_TOOLCHAIN}
-)
-
-rosserial_add_client_target(firmware pendant ALL)
-rosserial_add_client_target(firmware pendant-upload)
-
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

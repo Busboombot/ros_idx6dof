@@ -10,12 +10,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  message_generation
   rosserial_arduino
   rosserial_client
 )
-
-
-
 
 
 ## System dependencies are found with CMake's conventions
@@ -55,7 +53,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
    FILES
-   MotionCommand.msg
+   Command.msg
+   Log.msg
+   Position.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -73,10 +73,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -158,14 +158,6 @@ rosserial_generate_ros_lib(
   PACKAGE rosserial_arduino
   SCRIPT make_libraries.py
 )
-
-rosserial_configure_client(
-  DIRECTORY firmware
-  TOOLCHAIN_FILE ${ROSSERIAL_ARDUINO_TOOLCHAIN}
-)
-
-rosserial_add_client_target(firmware idxrobot ALL)
-rosserial_add_client_target(firmware idxrobot-upload)
 
 #############
 ## Install ##
