@@ -1,65 +1,70 @@
 <!--waist link -> shoulderA link -> shoulderB link -> elbow link -> wristA link -> wristB link-->
 
 <robot name="ArmBot">
-
 	<!--Links-->
-
-	
 	<link name="waistLink">
 		<visual>
 			<origin xyz="0 0 0" rpy="0 0 0"/>
 			<geometry>
-				<cylinder length="0.05" radius="0.1"/>
+				<cylinder length="0.05" radius="0.1"/>            
 			</geometry>
 		</visual>
 	</link>
 
 	<link name="shoulderALink">
 		<visual>
-			<origin xyz="0 0 0.381" rpy="0 0 0"/>
+			<origin xyz="0 0 0.3" rpy="1.57 0 0"/>
 			<geometry>
-				<box size="0.05 0.05 0.05"/>
+				<cylinder length=".05" radius="0.05"/>
 			</geometry>
 		</visual>
 	</link>
 
 	<link name="shoulderBLink">
 		<visual>
-			<origin xyz="0 0 0" rpy="0 0 0"/>
+			<origin xyz="0 0 0" rpy="0 1.57 0"/>
 			<geometry>
-				<box size="0.05 0.05 0.05"/>
+				<cylinder length=".05" radius="0.05"/>
 			</geometry>
 		</visual>
 	</link>
 
 	<link name="elbowLink">
 		<visual>
-			<origin xyz="0 0.3048 0" rpy="0 0 0"/>
+			<origin xyz="0 0.30 0" rpy="0 1.57 0"/>
 			<geometry>
-				<box size="0.05 0.05 0.05"/>
+				<cylinder length=".05" radius="0.05"/>
 			</geometry>
 		</visual>
 	</link>
 
 	<link name="wristALink">
 		<visual>
-			<origin xyz="0 0.3048 0" rpy="0 0 0"/>
+			<origin xyz="0 0.30 0" rpy="0 1.57 0"/>
 			<geometry>
-				<box size="0.05 0.05 0.05"/>
+				<cylinder length=".05" radius="0.05"/>
 			</geometry>
 		</visual>
 	</link>
 	
 	<link name="wristBLink">
 		<visual>
-			<origin xyz="0 0 0" rpy="1.57 0 0"/>
+			<origin xyz="0 .08 0 " rpy="1.57 0 0"/>
 			<geometry>
-				<cylinder length="0.1" radius="0.01"/>
+				<cylinder length="0.2" radius="0.01"/>
 			</geometry>
 		</visual>
 	</link>
 
-
+	<link name="effector">
+		<visual>
+			<origin xyz="0.0 .0 0 " rpy="0 0 0 "/>
+			<geometry>
+				<sphere radius=".03"/>
+			</geometry>
+		</visual>
+	</link>
+    
 	<!--Joints-->
 
 
@@ -74,7 +79,7 @@
 	<joint name="shoulderAJoint" type="revolute">
 		<parent link="shoulderALink"/>
 		<child link="shoulderBLink"/>
-		<origin xyz="0 0 0.381" rpy="0 0 0"/>
+		<origin xyz="0 0 0.3" rpy="0 0 0"/>
 		<limit lower="-3.1416" upper="3.1416" effort="10" velocity="4"/>
 		<axis xyz="0 1 0"/>
 	</joint>
@@ -83,24 +88,32 @@
 		<parent link="shoulderBLink"/>
 		<child link="elbowLink"/>
 		<origin xyz="0 0 0" rpy="0 0 0"/>
-		<limit lower="-1.308" upper="1.308" effort="10" velocity="4"/>
-		<axis xyz="0 0 1"/>
+		<limit lower="-3.1416" upper="3.1416" effort="10" velocity="4"/>
+		<axis xyz="1 0 0"/>
 	</joint>
 
 	<joint name="elbowJoint" type="revolute">
 		<parent link="elbowLink"/>
 		<child link="wristALink"/>
-		<origin xyz="0 0.3048 0" rpy="0 0 0"/>
-		<limit lower="-1.308" upper="1.308" effort="10" velocity="4"/>
-		<axis xyz="0 0 1"/>
+		<origin xyz="0 0.30 0" rpy="0 0 0"/>
+		<limit lower="-2" upper="2" effort="10" velocity="4"/>
+		<axis xyz="1 0 0"/>
 	</joint>
 
 	<joint name="wristAJoint" type="revolute">
 		<parent link="wristALink"/>
 		<child link="wristBLink"/>
-		<origin xyz="0 0.3048 0" rpy="0 0 0"/>
-		<limit lower="-1.308" upper="1.308" effort="10" velocity="4"/>
-		<axis xyz="0 0 1"/>
+		<origin xyz="0 0.30 0" rpy="0 0 0"/>
+		<limit lower="-3.14" upper="3.14" effort="10" velocity="4"/>
+		<axis xyz="1 0 0"/>
+	</joint>
+    
+	<joint name="wristBJoint" type="revolute">
+		<parent link="wristBLink"/>
+		<child link="effector"/>
+		<origin xyz="0 0.2 0" rpy="0 0 0"/>
+		<limit lower="-6.28" upper="6.28" effort="10" velocity="4"/>
+		<axis xyz="0 1 0"/>
 	</joint>
 
 </robot>

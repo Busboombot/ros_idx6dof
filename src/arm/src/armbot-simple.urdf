@@ -1,0 +1,62 @@
+<robot name="ArmBot">
+
+	<link name="waistl">
+		<visual> <geometry><sphere radius=".02"/></geometry> </visual>
+	</link>
+
+	<link name="shoulderl1">
+		<visual> <geometry><sphere radius=".02"/></geometry> </visual>
+	</link>
+
+	<link name="shoulderl2">
+		<visual> <geometry><sphere radius=".02"/></geometry> </visual>
+	</link>
+
+	<link name="elbow">
+		<visual> <geometry><sphere radius=".02"/></geometry> </visual>
+	</link>
+
+	<link name="wrist1">
+		<visual> <geometry><sphere radius=".02"/></geometry> </visual>
+	</link>
+	
+	<link name="wrist2">
+		<visual> <geometry><sphere radius=".02"/></geometry> </visual>
+	</link>
+
+	<joint name="waistj" type="revolute">
+		<parent link="waistl"/>
+		<child link="shoulderl1"/>
+		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<axis xyz="0 0 1"/>
+	</joint>
+
+	<joint name="shoulderj1" type="revolute">
+		<parent link="shoulderl1"/>
+		<child link="shoulderl2"/>
+		<origin xyz="0 0 0.381" rpy="0 0 0"/>
+		<axis xyz="0 1 0"/>
+	</joint>
+
+	<joint name="shoulderj2" type="revolute">
+		<parent link="shoulderl2"/>
+		<child link="elbowl"/>
+		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<axis xyz="1 0 0"/>
+	</joint>
+
+	<joint name="elbowj" type="revolute">
+		<parent link="elbowl"/>
+		<child link="wristl1"/>
+		<origin xyz="0 0.3048 0" rpy="0 0 0"/>
+		<axis xyz="1 0 0"/>
+	</joint>
+
+	<joint name="wristj" type="revolute">
+		<parent link="wristl1"/>
+		<child link="wristl2"/>
+		<origin xyz="0 0.3048 0" rpy="0 0 0"/>
+		<axis xyz="1 0 0"/>
+	</joint>
+
+</robot>
