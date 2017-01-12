@@ -1,0 +1,12 @@
+<launch>
+
+	<machine name="master" address="localhost" user="eric" default="true"/>
+	
+	<param name="max_joint_speed" value="500"/>
+	<param name="cmd_send_rate" value="2"/>
+	
+	<node name="JoyReader" pkg="joy" type="joy_node" />
+	<node name="JoystickMotion" pkg="joy_motion" type="listener.py"/>
+	<node name="MotionController" pkg="motion_control" type="controller.py"/>
+
+</launch>
