@@ -27,19 +27,24 @@ def zero_velocity(event, proto, memo):
         memo['last_v'] = v1
 
 
-def callback(msg, args):
+def send_callback(msg, args):
 
     proto,memo = args
 
     #if memo['timer'] is not None:
     #    memo['timer'].shutdown()
 
-    v0 = memo['last_v'] 
-    v1 = list(msg.v)
+    v0 = memo['last_v'] # The last velocity
+    v1 = list(msg.v) # New velocity, from the velocity command, such as the joy_motion node 
+    
+    # x = vt 
     x = [ .5*(v0_+v1_)*(msg.segment_duration/1000000.) for v0_, v1_ in zip(v0, v1) ]
     
+    # Advance the position
     memo['position'] = [ x_+xp_ for x_, xp_ in zip(x, memo['position'])]
     
+    # Send the command to the step controller
+    # .
     send_command(proto, memo, msg.segment_duration, v0, v1, x)
         
     # set a timer to zero the velocity if we don't get another message in time. 
@@ -56,11 +61,14 @@ def callback(msg, args):
     while len(proto)>2: # Allow the recieve buffer thread to clear
         sleep(.05)
     
+def recv_callback(m, resp):
+    print(m, resp)
+    
 def listener():
 
     rospy.init_node('motion_controller')
 
-    proto = Proto('/dev/ttyACM0').open()
+    proto = Proto('/dev/ttyACM0', callback=recv_callback).open()
 
     pub = rospy.Publisher('motion_control/joints', JointState, queue_size=4)
 
@@ -74,11 +82,10 @@ def listener():
 
     
 
-    rospy.Subscriber("motion_control", VelocityCommand, callback, (proto,memo))
+    rospy.Subscriber("motion_control", VelocityCommand, send_callback, (proto,memo))
 
     rospy.on_shutdown(lambda: proto.proto.close())
 
-    # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
 if __name__ == '__main__':
