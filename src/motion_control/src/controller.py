@@ -62,7 +62,8 @@ def send_callback(msg, args):
         sleep(.05)
     
 def recv_callback(m, resp):
-    print(m, resp)
+    pass
+    #print(m, resp)
     
 def listener():
 
