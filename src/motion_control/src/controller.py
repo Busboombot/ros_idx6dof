@@ -20,6 +20,7 @@ def zero_velocity(event, proto, memo):
     v0 =  memo['last_v']
     
     if sum(v0) != 0: 
+        print("Zeroing Velocity")
         dt = .25
         v1 = [0]*6
         x = [ .5*(v0_+v1_)*dt  for v0, v1 in zip(v0, v1) ]
@@ -58,8 +59,12 @@ def send_callback(msg, args):
       
     memo['last_v'] = v1
       
+    sleep_tick = 0
     while len(proto)>2: # Allow the recieve buffer thread to clear
+        print("Sleeping", sleep_tick)
         sleep(.05)
+        sleep_tick += 1
+        
     
 def recv_callback(m, resp):
     pass
@@ -82,7 +87,6 @@ def listener():
     }
 
     
-
     rospy.Subscriber("motion_control", VelocityCommand, send_callback, (proto,memo))
 
     rospy.on_shutdown(lambda: proto.proto.close())

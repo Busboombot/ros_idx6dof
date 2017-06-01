@@ -30,6 +30,7 @@ def callback(data, memo):
         memo['last_time'] = time
         return 
     
+    # don't do updates more frequently than 10 per sec
     if dt >= .1 :
         memo['last_time'] = time
         
