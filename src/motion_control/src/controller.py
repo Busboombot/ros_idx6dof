@@ -13,7 +13,7 @@ def send_command(proto, memo, d, v0, v1, x):
 
     print(msg)
 
-    #proto.write(msg)
+    proto.write(msg)
 
     memo['seq'] = seq + 1
 
