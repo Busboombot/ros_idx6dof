@@ -6,6 +6,8 @@ from time import sleep
 
 def send_command(proto, memo, d, v0, v1, x):
     
+    return
+    
     seq = memo['seq']
     
     msg = Command(seq, 10, d, v0, v1, x)
