@@ -5,14 +5,15 @@ from trajectory import Proto, Command, freq_map
 from time import sleep
 
 def send_command(proto, memo, d, v0, v1, x):
-    
-    return
+
     
     seq = memo['seq']
     
     msg = Command(seq, 10, d, v0, v1, x)
 
-    proto.write(msg)
+    print(msg)
+
+    #proto.write(msg)
 
     memo['seq'] = seq + 1
 
