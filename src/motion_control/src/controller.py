@@ -61,13 +61,9 @@ def send_callback(msg, args):
     #memo['pub'].publish(jm)
       
     memo['last_v'] = v1
-      
-    sleep_tick = 0
+       
     while len(proto)>2: # Allow the recieve buffer thread to clear
-        print("Sleeping", sleep_tick)
-        sleep(.05)
-        sleep_tick += 1
-        
+        sleep(.05) 
     
 def recv_callback(m, resp):
     pass
