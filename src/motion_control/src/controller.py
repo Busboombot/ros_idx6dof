@@ -68,7 +68,7 @@ def listener():
 
     rospy.init_node('motion_controller')
 
-    proto = Proto('/dev/ttyACM0', callback=recv_callback).open()
+    proto = Proto('/dev/arduino_due_host', callback=recv_callback).open()
 
     pub = rospy.Publisher('motion_control/joints', JointState, queue_size=4)
 
