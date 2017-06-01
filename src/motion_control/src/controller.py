@@ -52,13 +52,13 @@ def send_callback(msg, args):
     send_command(proto, memo, msg.segment_duration, v0, v1, x)
         
     # set a timer to zero the velocity if we don't get another message in time. 
-    memo['timer'] = rospy.Timer(rospy.Duration(msg.segment_duration-.05), 
-                lambda event: zero_velocity(event, proto, memo), oneshot=True)
+    #memo['timer'] = rospy.Timer(rospy.Duration(msg.segment_duration-.05), 
+    #            lambda event: zero_velocity(event, proto, memo), oneshot=True)
         
     #print msg
-    jm = JointState(joints=memo['position'] ) 
-    jm.header.stamp = rospy.Time.now()
-    memo['pub'].publish(jm)
+    #jm = JointState(joints=memo['position'] ) 
+    #jm.header.stamp = rospy.Time.now()
+    #memo['pub'].publish(jm)
       
     memo['last_v'] = v1
       
