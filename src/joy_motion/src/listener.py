@@ -42,8 +42,8 @@ def callback(data, memo):
           
         velocities = [copysign(m(abs(a)), a) for a in data.axes ]     
          
-
-        if sum(abs(e) for e in velocities) + sum(abs(e) for e in memo['last_velocities']) > 0:
+        # if both the previous and the next velocities are all zero, then there is no message to send. 
+        if sum(abs(e) for e in (velocities + memo['last_velocities']) ) > 0:
             
             msg = VelocityCommand(segment_duration=dt*1e6, param_space=VelocityCommand.JOINT_SPACE )
             
@@ -51,6 +51,7 @@ def callback(data, memo):
         
             memo['pub'].publish(msg)
             memo['seq'] = memo['seq'] + 1
+      
             
         memo['last_velocities'] = velocities
 
@@ -64,7 +65,7 @@ def listener():
     # run simultaneously.
     rospy.init_node('joy_motion_gen')
 
-    rate = rospy.Rate(5) # 5hz
+    rate = rospy.Rate(10) # In messages per second
 
     pub = rospy.Publisher('motion_control', VelocityCommand, queue_size=4)
 
