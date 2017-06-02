@@ -10,15 +10,14 @@ def send_command(proto, memo, d, v0, v1, x):
     
     msg = Command(seq, 10, d, v0, v1, x)
 
-
     proto.write(msg)
 
     memo['seq'] = seq + 1
 
-    try:
-        proto.wait_done(seq-2) # Wait until there are only 2 outstanding segments
-    except TimeoutException:
-        pass
+    #try:
+    #    proto.wait_done(seq-2) # Wait until there are only 2 outstanding segments
+    #except TimeoutException:
+    #    pass
 
 def zero_velocity(event, proto, memo):
     
@@ -51,7 +50,8 @@ def send_callback(msg, args):
     
     # Send the command to the step controller
     # .
-    send_command(proto, memo, msg.segment_duration, v0, v1, x)
+  
+    send_command(proto, memo, msg.segment_duration *1.05, v0, v1, x)
         
     # set a timer to zero the velocity if we don't get another message in time. 
     #memo['timer'] = rospy.Timer(rospy.Duration(msg.segment_duration-.05), 
@@ -81,7 +81,6 @@ def listener():
     pub = rospy.Publisher('motion_control/joints', JointState, queue_size=4)
 
     
-
     memo = {
         'pub': pub, 
         'seq': 0,
@@ -95,7 +94,6 @@ def listener():
 
     rospy.on_shutdown(lambda: proto.close())
 
-    
 
     rospy.spin()
 
