@@ -1,20 +1,24 @@
 #!/usr/bin/env python
 import rospy
 from motion_control.msg import VelocityCommand, Segment, JointState
-from trajectory import Proto, Command, freq_map
+from trajectory import Proto, Command, freq_map, TimeoutException
 from time import sleep
 
 def send_command(proto, memo, d, v0, v1, x):
 
-    
     seq = memo['seq']
     
     msg = Command(seq, 10, d, v0, v1, x)
+
 
     proto.write(msg)
 
     memo['seq'] = seq + 1
 
+    try:
+        proto.wait_done(seq-2) # Wait until there are only 2 outstanding segments
+    except TimeoutException:
+        pass
 
 def zero_velocity(event, proto, memo):
     
@@ -60,8 +64,7 @@ def send_callback(msg, args):
       
     memo['last_v'] = v1
        
-    while len(proto)>2: # Allow the recieve buffer thread to clear
-        sleep(.05) 
+
     
 def recv_callback(m, resp):
     pass
@@ -71,9 +74,13 @@ def listener():
 
     rospy.init_node('motion_controller')
 
-    proto = Proto('/dev/arduino_due_host', callback=recv_callback).open()
+    proto = Proto('/dev/arduino_due_host', callback=recv_callback)
+
+    proto.purge()
 
     pub = rospy.Publisher('motion_control/joints', JointState, queue_size=4)
+
+    
 
     memo = {
         'pub': pub, 
@@ -86,7 +93,9 @@ def listener():
     
     rospy.Subscriber("motion_control", VelocityCommand, send_callback, (proto,memo))
 
-    rospy.on_shutdown(lambda: proto.proto.close())
+    rospy.on_shutdown(lambda: proto.close())
+
+    
 
     rospy.spin()
 
