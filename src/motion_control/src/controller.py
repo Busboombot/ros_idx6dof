@@ -50,9 +50,6 @@ def send_callback(msg, args):
     # x = vt 
     x = [ .5*(v0_+v1_)*(duration/1000000.) for v0_, v1_ in zip(v0, v1) ]
     
-    if max(x) < 10 :
-        print("Too small", x)
-        return 
     
     # Advance the position
     memo['position'] = [ x_+xp_ for x_, xp_ in zip(x, memo['position'])]
