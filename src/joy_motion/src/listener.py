@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from sensor_msgs.msg import Joy
-from motion_control.msg import VelocityCommand, Segment
+from motion_control.msg import VelocityCommand, Segment, JointState
 from trajectory import freq_map
 from time import sleep
 from math import copysign
@@ -15,6 +15,11 @@ def timed_callback(event, memo):
         data.header.stamp.secs = event.current_real.secs
         data.header.stamp.nsecs = event.current_real.nsecs
         callback(data, memo)
+   
+def position_callback(data, memo):
+    
+    pass # print("JOINTS", data.joints)
+    
         
 def callback(data, memo):
     
@@ -56,14 +61,8 @@ def callback(data, memo):
             
         memo['last_velocities'] = velocities
 
-
 def listener():
 
-    # In ROS, nodes are uniquely named. If two nodes with the same
-    # node are launched, the previous one is kicked off. The
-    # anonymous=True flag means that rospy will choose a unique
-    # name for our 'listener' node so that multiple listeners can
-    # run simultaneously.
     rospy.init_node('joy_motion_gen')
 
     rate = rospy.Rate(10) # In messages per second
@@ -80,6 +79,8 @@ def listener():
     }
 
     rospy.Subscriber("joy", Joy, callback, memo)
+
+    rospy.Subscriber("motion_control/joints", JointState, position_callback, memo)
 
     rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
 
