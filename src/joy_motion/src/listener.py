@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 import rospy
 from sensor_msgs.msg import Joy
-from motion_control.msg import VelocityCommand, Segment, JointState
+from motion_control.msg import MotionCommand, Segment, JointState
 from trajectory import freq_map
 from time import sleep
 from math import copysign
+from math import ceil
 
 N_AXES =6
+
+
 
 def timed_callback(event, memo):
 
@@ -51,9 +54,12 @@ def callback(data, memo):
         # if both the previous and the next velocities are all zero, then there is no message to send. 
         if sum(abs(e) for e in (velocities + memo['last_velocities']) ) > 0:
             
-            msg = VelocityCommand(segment_duration=dt*1e6, param_space=VelocityCommand.JOINT_SPACE )
-            
-            msg.v = velocities
+            msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
+                                command_type=MotionCommand.V_COMMAND,
+                                exec_type=MotionCommand.IMMEDIATE,
+                                t=dt,
+                                joints=velocities)
+
         
             memo['pub'].publish(msg)
             memo['seq'] = memo['seq'] + 1
@@ -67,7 +73,7 @@ def listener():
 
     rate = rospy.Rate(10) # In messages per second
 
-    pub = rospy.Publisher('motion_control', VelocityCommand, queue_size=4)
+    pub = rospy.Publisher('motion_control', MotionCommand, queue_size=4)
 
     memo = {
         'pub': pub, 
