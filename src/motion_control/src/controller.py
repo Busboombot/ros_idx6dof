@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import rospy
-from motion_control.msg import MotionCommand, Segment, SegmentResponse
-from trajectory import Proto, Command, freq_map, TimeoutException, SegmentList, SegmentIterator, SegmentError
+from motion_control.msg import MotionCommand, MotorCommand, Segment, SegmentResponse
+from trajectory import ( Proto, Command, freq_map, TimeoutException, SegmentList, SegmentIterator, 
+                         SegmentError, VrOutOfRangeError ) 
 from time import sleep
 from Queue import Queue, Empty
 from threading import Thread
@@ -11,11 +12,7 @@ from threading import Thread
 def add_segment_from_message(memo, segment_list, msg):
     
     if (msg.exec_type == MotionCommand.IMMEDIATE and len(segment_list)  > 3):
-        
-        # drop the message
-        print("Dropping")
-        return 
-    
+        pass
     
     if msg.command_type == MotionCommand.V_COMMAND:
         
@@ -23,6 +20,8 @@ def add_segment_from_message(memo, segment_list, msg):
             try:
                 segment_list.add_velocity_segment(msg.joints,t=msg.t)
             except SegmentError as e:
+                print("ERROR", e)
+            except VrOutOfRangeError as e:
                 print("ERROR", e)
         else:
             pass
@@ -32,6 +31,8 @@ def add_segment_from_message(memo, segment_list, msg):
             try:
                 segment_list.add_distance_segment(msg.joints,t=msg.t)
             except SegmentError as e:
+                print("ERROR", e)
+            except VrOutOfRangeError as e:
                 print("ERROR", e)
         else:
             pass
@@ -49,48 +50,63 @@ def send_command_thread(memo):
     seq = 0
 
     si  = SegmentIterator(sl)
-    last_done = None
-    last_qt = None
     
     while True:
         
+        no_data = False
+        queue_empty = False
+        
         while True:
             if proto.read_next() is False:
+                no_data = False
                 break
-            
-        if last_done != proto.last_done:
-         
-            last_done = proto.last_done
-
         try:
             msg = queue.get_nowait()
           
             add_segment_from_message(memo, sl, msg)
         except Empty:
-            pass
+            queue_empty = True
         
         # Try to leave a message in the segment list, so that the next one that comes in 
         # can be linked to it without taking velocity to 0. 
-        if memo['queue_time'] < .3:
+        if len(sl) > 1: #if memo['queue_time'] < .3:
     
             try:
                 s = next(si)
             
-                msg = Command(seq, 10, 
-                        segment_time=int(s.t_seg*1000000), 
-                        v0=[ int(sj.v0) for sj in s.joints ],
-                        v1=[ int(sj.v1) for sj in s.joints ], 
-                        steps= [ int(sj.x) for sj in s.joints ])
+                segment_time = int(s.t_seg*1000000)
+                
+                if segment_time > 0:
+            
+                    msg = Command(seq, 10, 
+                            segment_time=int(s.t_seg*1000000), 
+                            v0=[ int(sj.v0) for sj in s.joints ],
+                            v1=[ int(sj.v1) for sj in s.joints ], 
+                            steps= [ int(sj.x) for sj in s.joints ])
                     
-                proto.write(msg)
-                print(memo['queue_time'], len(sl), msg)
+                    proto.write(msg)
+                    #print(memo['queue_time'], len(sl), msg)
+            
+            
+                    mcmsg = MotorCommand(
+                            seq = seq, 
+                            segment_time=int(s.t_seg*1000000), 
+                            v0=[ int(sj.v0) for sj in s.joints ],
+                            v1=[ int(sj.v1) for sj in s.joints ], 
+                            steps= [ int(sj.x) for sj in s.joints ])
+
+                    mcmsg.header.stamp = rospy.Time.now()
+
+                    memo['mcpub'].publish(mcmsg)
+                
             
                 seq += 1
             
             except StopIteration:
                 pass
-        elif last_qt != memo['queue_time']:
-            print(memo['queue_time'], len(sl))
+        elif no_data and queue_empty:
+            print ("HERE")
+
             
         last_qt = memo['queue_time']
             
@@ -115,6 +131,8 @@ def recv_callback(memo, proto, resp):
            #encoder_diffs=resp.encoder_diffs
     )
 
+    msg.header.stamp = rospy.Time.now()
+    
     memo['pub'].publish(msg)
    
     memo['queue_time'] = float(resp.queue_time ) / 1e6
@@ -127,36 +145,37 @@ def listener():
 
     rospy.init_node('motion_controller')
 
-
-    pub = rospy.Publisher('motion_control/responses', SegmentResponse, queue_size=10)
-
+    pub = rospy.Publisher('motion_control/responses', SegmentResponse, queue_size=5)
+    
+    mcpub = rospy.Publisher('motion_control/motor_command', MotorCommand, queue_size=5)
+    
     memo = {
         'queue': Queue(),
         'proto': None,
         'pub': pub, 
+        'mcpub': mcpub,
         'seq': 0,
         'queue_time': 0,
         'last_v': [0]*6,
         'timer': None,
         'position': [0]*6,
         'timer': None
+        
     }
     
     def recv_callback_wrapper(proto, resp):
         recv_callback(memo, proto, resp) 
 
-    proto = Proto('/dev/arduino_due_host', a_max=50000, v_max=10000, callback=recv_callback_wrapper )
+    proto = Proto('/dev/arduino_due_host', a_max=100000, v_max=10000, callback=recv_callback_wrapper )
     memo['proto'] = proto
     proto.purge()
     
-  
     worker = Thread(target=send_command_thread, args=(memo,))
     worker.setDaemon(True)
     worker.start()
 
-    #memo['timer'] = rospy.Timer(rospy.Duration(1), lambda event: timed_callback( event, memo))
-    
-    rospy.Subscriber("motion_control/commands", MotionCommand, message_callback, memo)
+    rospy.Subscriber("motion_control/segment_command", MotionCommand, message_callback, memo)
+
 
     rospy.on_shutdown(lambda: shutdown(memo))
 

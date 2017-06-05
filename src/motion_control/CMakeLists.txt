@@ -49,6 +49,7 @@ add_message_files(
    Segment.msg
    SegmentResponse.msg
    MotionCommand.msg
+   MotorCommand.msg
    JointState.msg
 )
 

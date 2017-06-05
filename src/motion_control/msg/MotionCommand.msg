@@ -15,3 +15,4 @@ float32 t           # Common time for either X_COMMAND or V_COMMAND
 float32 x           # Common X distance for V_COMMAND
 float32 v           # Common Velocity for X_COMMAND
 float32[6] joints   # Joint values, either distance or velocity
+

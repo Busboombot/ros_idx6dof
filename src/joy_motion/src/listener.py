@@ -24,8 +24,11 @@ def timed_callback(event, memo):
             data.header.stamp.secs = event.current_real.secs
             data.header.stamp.nsecs = event.current_real.nsecs
             callback(data, memo)
+        else:
+            memo['last_message'] = None
    
 def callback(data, memo):
+    
     
     memo['last_message']  = data
      
@@ -40,6 +43,9 @@ def callback(data, memo):
         return 
     
     memo['last_time'] = time
+    
+    if memo['queue_time'] > .5:
+        return 
     
     try:
         button = max([i for i,b in enumerate(data.buttons[:4])if b])
@@ -56,8 +62,10 @@ def callback(data, memo):
         msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
                             command_type=MotionCommand.V_COMMAND,
                             exec_type=MotionCommand.IMMEDIATE,
-                            t=.25,
+                            t=.1,
                             joints=velocities)
+
+        msg.header.stamp = rospy.Time.now()
 
         memo['pub'].publish(msg)
             
@@ -68,9 +76,9 @@ def listener():
 
     rospy.init_node('joy_motion_gen')
 
-    rate = rospy.Rate(10) # In messages per second
+    #rate = rospy.Rate(10) # In messages per second
 
-    pub = rospy.Publisher('motion_control/commands', MotionCommand, queue_size=4)
+    pub = rospy.Publisher('motion_control/segment_command', MotionCommand, queue_size=4)
 
     memo = {
         'pub': pub, 
