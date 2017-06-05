@@ -16,11 +16,14 @@ def response_callback(msg, memo):
 def timed_callback(event, memo):
 
     if memo['last_message'] is not None:
+        
         data = memo['last_message']
-        data.header.stamp.secs = event.current_real.secs
-        data.header.stamp.nsecs = event.current_real.nsecs
-        callback(data, memo)
-    
+
+        # Don't repeatedly send if there is no motion. 
+        if sum(abs(e) for e in data.axes ) > 0:
+            data.header.stamp.secs = event.current_real.secs
+            data.header.stamp.nsecs = event.current_real.nsecs
+            callback(data, memo)
    
 def callback(data, memo):
     
@@ -36,40 +39,36 @@ def callback(data, memo):
         memo['last_time'] = time
         return 
     
-    # don't do updates more frequently than 10 per sec
+    memo['last_time'] = time
     
-    if memo['queue_time'] < 1:
+    try:
+        button = max([i for i,b in enumerate(data.buttons[:4])if b])
+    except ValueError:
+        button = 0
+    
+    m =  memo['freq_map'][button]
+      
+    velocities = [copysign(m(abs(a)), a) for a in data.axes ]     
      
-        memo['last_time'] = time
+    # if both the previous and the next velocities are all zero, then there is no message to send. 
+    if sum(abs(e) for e in (velocities + memo['last_velocities']) ) > 0:
         
-        try:
-            button = max([i for i,b in enumerate(data.buttons[:4])if b])
-        except ValueError:
-            button = 0
-        
-        m =  memo['freq_map'][button]
-          
-        velocities = [copysign(m(abs(a)), a) for a in data.axes ]     
-         
-        # if both the previous and the next velocities are all zero, then there is no message to send. 
-        if sum(abs(e) for e in (velocities + memo['last_velocities']) ) > 0:
-            
-            msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
-                                command_type=MotionCommand.V_COMMAND,
-                                exec_type=MotionCommand.IMMEDIATE,
-                                t=.14,
-                                joints=velocities)
+        msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
+                            command_type=MotionCommand.V_COMMAND,
+                            exec_type=MotionCommand.IMMEDIATE,
+                            t=.25,
+                            joints=velocities)
 
-        
-            memo['pub'].publish(msg)
+        memo['pub'].publish(msg)
             
-        memo['last_velocities'] = velocities
+            
+    memo['last_velocities'] = velocities
 
 def listener():
 
     rospy.init_node('joy_motion_gen')
 
-    rate = rospy.Rate(12) # In messages per second
+    rate = rospy.Rate(10) # In messages per second
 
     pub = rospy.Publisher('motion_control/commands', MotionCommand, queue_size=4)
 
@@ -88,7 +87,6 @@ def listener():
 
     rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
 
-    # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
 if __name__ == '__main__':

@@ -8,7 +8,15 @@ from Queue import Queue, Empty
 from threading import Thread
 
 
-def add_segment_from_message(segment_list, msg):
+def add_segment_from_message(memo, segment_list, msg):
+    
+    if (msg.exec_type == MotionCommand.IMMEDIATE and len(segment_list)  > 3):
+        
+        # drop the message
+        print("Dropping")
+        return 
+    
+    
     if msg.command_type == MotionCommand.V_COMMAND:
         
         if msg.t > 0:
@@ -27,9 +35,7 @@ def add_segment_from_message(segment_list, msg):
                 print("ERROR", e)
         else:
             pass
-
-
-
+            
 
 def send_command_thread(memo):
     
@@ -44,6 +50,7 @@ def send_command_thread(memo):
 
     si  = SegmentIterator(sl)
     last_done = None
+    last_qt = None
     
     while True:
         
@@ -52,35 +59,41 @@ def send_command_thread(memo):
                 break
             
         if last_done != proto.last_done:
-            print(proto.queue_length, proto.queue_time, len(proto.sent) )
+         
             last_done = proto.last_done
 
         try:
             msg = queue.get_nowait()
           
-            add_segment_from_message(sl, msg)
+            add_segment_from_message(memo, sl, msg)
         except Empty:
             pass
         
+        # Try to leave a message in the segment list, so that the next one that comes in 
+        # can be linked to it without taking velocity to 0. 
+        if memo['queue_time'] < .3:
     
-        try:
-            s = next(si)
+            try:
+                s = next(si)
             
-            msg = Command(seq, 10, 
-                    segment_time=int(s.t_seg*1000000), 
-                    v0=[ int(sj.v0) for sj in s.joints ],
-                    v1=[ int(sj.v1) for sj in s.joints ], 
-                    steps= [ int(sj.x) for sj in s.joints ])
+                msg = Command(seq, 10, 
+                        segment_time=int(s.t_seg*1000000), 
+                        v0=[ int(sj.v0) for sj in s.joints ],
+                        v1=[ int(sj.v1) for sj in s.joints ], 
+                        steps= [ int(sj.x) for sj in s.joints ])
                     
-            proto.write(msg)
-            print(msg)
+                proto.write(msg)
+                print(memo['queue_time'], len(sl), msg)
             
-            seq += 1
+                seq += 1
             
-        except StopIteration:
-            pass
-
-
+            except StopIteration:
+                pass
+        elif last_qt != memo['queue_time']:
+            print(memo['queue_time'], len(sl))
+            
+        last_qt = memo['queue_time']
+            
 
 def message_callback(msg, memo):
     memo['queue'].put(msg)
@@ -104,6 +117,7 @@ def recv_callback(memo, proto, resp):
 
     memo['pub'].publish(msg)
    
+    memo['queue_time'] = float(resp.queue_time ) / 1e6
    
 def shutdown(memo):
      
@@ -121,6 +135,7 @@ def listener():
         'proto': None,
         'pub': pub, 
         'seq': 0,
+        'queue_time': 0,
         'last_v': [0]*6,
         'timer': None,
         'position': [0]*6,
