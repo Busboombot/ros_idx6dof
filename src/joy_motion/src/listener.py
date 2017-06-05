@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from sensor_msgs.msg import Joy
-from motion_control.msg import MotionCommand, Segment, JointState
+from motion_control.msg import MotionCommand, Segment, JointState, SegmentResponse
 from trajectory import freq_map
 from time import sleep
 from math import copysign
@@ -9,7 +9,9 @@ from math import ceil
 
 N_AXES =6
 
-
+def response_callback(msg, memo):
+    
+    memo['queue_time'] = float(msg.queue_time ) / 1e6
 
 def timed_callback(event, memo):
 
@@ -19,11 +21,6 @@ def timed_callback(event, memo):
         data.header.stamp.nsecs = event.current_real.nsecs
         callback(data, memo)
    
-def position_callback(data, memo):
-    
-    pass # print("JOINTS", data.joints)
-    
-        
 def callback(data, memo):
     
     memo['last_message']  = data
@@ -39,7 +36,9 @@ def callback(data, memo):
         return 
     
     # don't do updates more frequently than 10 per sec
-    if dt >= .1 :
+    
+    if memo['queue_time'] < .8:
+     
         memo['last_time'] = time
         
         try:
@@ -57,13 +56,11 @@ def callback(data, memo):
             msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
                                 command_type=MotionCommand.V_COMMAND,
                                 exec_type=MotionCommand.IMMEDIATE,
-                                t=dt*1.1,
+                                t=.2,
                                 joints=velocities)
 
         
             memo['pub'].publish(msg)
-            memo['seq'] = memo['seq'] + 1
-      
             
         memo['last_velocities'] = velocities
 
@@ -73,11 +70,11 @@ def listener():
 
     rate = rospy.Rate(12) # In messages per second
 
-    pub = rospy.Publisher('motion_control', MotionCommand, queue_size=4)
+    pub = rospy.Publisher('motion_control/commands', MotionCommand, queue_size=4)
 
     memo = {
         'pub': pub, 
-        'seq': 0,
+        'queue_time': 0,
         'last_message' : None,
         'last_time': 0,
         'freq_map': freq_map,
@@ -86,9 +83,10 @@ def listener():
 
     rospy.Subscriber("joy", Joy, callback, memo)
 
-    rospy.Subscriber("motion_control/joints", JointState, position_callback, memo)
+    rospy.Subscriber("motion_control/responses", SegmentResponse, response_callback, memo)
+    
 
-    rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
+    #rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
