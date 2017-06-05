@@ -57,7 +57,7 @@ def callback(data, memo):
             msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
                                 command_type=MotionCommand.V_COMMAND,
                                 exec_type=MotionCommand.IMMEDIATE,
-                                t=dt,
+                                t=dt*1.1,
                                 joints=velocities)
 
         
@@ -71,7 +71,7 @@ def listener():
 
     rospy.init_node('joy_motion_gen')
 
-    rate = rospy.Rate(10) # In messages per second
+    rate = rospy.Rate(12) # In messages per second
 
     pub = rospy.Publisher('motion_control', MotionCommand, queue_size=4)
 

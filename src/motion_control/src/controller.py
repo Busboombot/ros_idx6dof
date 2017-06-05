@@ -31,14 +31,21 @@ def send_command_thread(memo):
     sl = memo['proto'].segment_list
     seq = 0
 
-    
     si  = SegmentIterator(sl)
+    last_done = None
     
     while True:
         
-        if proto.read_next():
-        
-            print(proto.queue_length, len(proto.sent))
+        while True:
+            if proto.read_next() is False:
+                break
+            
+            
+        if last_done != proto.last_done:
+            print(proto.queue_length, proto.queue_time, len(proto.sent) )
+            last_done = proto.last_done
+            
+       
 
         try:
             msg = queue.get_nowait()
@@ -46,8 +53,7 @@ def send_command_thread(memo):
         except Empty:
             pass
         
-        
-        
+    
         try:
             s = next(si)
             
@@ -58,6 +64,7 @@ def send_command_thread(memo):
                     steps= [ int(sj.x) for sj in s.joints ])
                     
             proto.write(msg)
+            #print(msg)
             
             seq += 1
             
