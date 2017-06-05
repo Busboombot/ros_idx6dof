@@ -20,6 +20,7 @@ def timed_callback(event, memo):
         data.header.stamp.secs = event.current_real.secs
         data.header.stamp.nsecs = event.current_real.nsecs
         callback(data, memo)
+    
    
 def callback(data, memo):
     
@@ -84,9 +85,8 @@ def listener():
     rospy.Subscriber("joy", Joy, callback, memo)
 
     rospy.Subscriber("motion_control/responses", SegmentResponse, response_callback, memo)
-    
 
-    #rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
+    rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
