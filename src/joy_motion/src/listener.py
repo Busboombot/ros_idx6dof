@@ -38,7 +38,7 @@ def callback(data, memo):
     
     # don't do updates more frequently than 10 per sec
     
-    if memo['queue_time'] < .8:
+    if memo['queue_time'] < 1:
      
         memo['last_time'] = time
         
@@ -57,7 +57,7 @@ def callback(data, memo):
             msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
                                 command_type=MotionCommand.V_COMMAND,
                                 exec_type=MotionCommand.IMMEDIATE,
-                                t=.2,
+                                t=.14,
                                 joints=velocities)
 
         
