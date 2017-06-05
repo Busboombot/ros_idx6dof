@@ -11,16 +11,18 @@ N_AXES =6
 
 def timed_callback(event, memo, pub):
     
-    v = 600 if memo[0] else 300
+    sgn = -1 if memo[0] else 1
     memo[0] = not memo[0]
 
-    print v, memo
+    x = 10000
 
-    msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
-                        command_type=MotionCommand.V_COMMAND,
+    args = dict(param_space=MotionCommand.JOINT_SPACE,
+                        command_type=MotionCommand.X_COMMAND,
                         exec_type=MotionCommand.IMMEDIATE,
-                        t=.11,
-                        joints=[v,0,0,0,0,0])
+                        t=2)
+
+    msg = MotionCommand(joints=[sgn*x,0,0,0,0,0], **args)
+    
 
     pub.publish(msg)
     
@@ -33,7 +35,7 @@ def do_pulse():
 
     memo = [True]
 
-    rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo, pub))
+    rospy.Timer(rospy.Duration(.95), lambda event: timed_callback(event, memo, pub))
 
 
     # spin() simply keeps python from exiting until this node is stopped

@@ -10,6 +10,7 @@ from threading import Thread
 
 def add_segment_from_message(segment_list, msg):
     if msg.command_type == MotionCommand.V_COMMAND:
+        
         if msg.t > 0:
             try:
                 segment_list.add_velocity_segment(msg.joints,t=msg.t)
@@ -20,7 +21,10 @@ def add_segment_from_message(segment_list, msg):
         
     else:
         if msg.t > 0:
-            pass
+            try:
+                segment_list.add_distance_segment(msg.joints,t=msg.t)
+            except SegmentError as e:
+                print("ERROR", e)
         else:
             pass
 
@@ -40,7 +44,6 @@ def send_command_thread(memo):
             if proto.read_next() is False:
                 break
             
-            
         if last_done != proto.last_done:
             print(proto.queue_length, proto.queue_time, len(proto.sent) )
             last_done = proto.last_done
@@ -49,6 +52,7 @@ def send_command_thread(memo):
 
         try:
             msg = queue.get_nowait()
+          
             add_segment_from_message(sl, msg)
         except Empty:
             pass
@@ -64,7 +68,7 @@ def send_command_thread(memo):
                     steps= [ int(sj.x) for sj in s.joints ])
                     
             proto.write(msg)
-            #print(msg)
+            print(msg)
             
             seq += 1
             
@@ -75,6 +79,7 @@ def send_command_thread(memo):
 
 def message_callback(msg, memo):
 
+    
     memo['queue'].put(msg)
     
     return 
