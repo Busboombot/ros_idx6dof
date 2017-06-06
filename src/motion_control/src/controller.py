@@ -13,7 +13,7 @@ def add_segment_from_message(memo, segment_list, msg):
     
     
     # Drop IMMEDIATE messages when the queue is full
-    if (msg.exec_type == MotionCommand.IMMEDIATE and (len(segment_list)  > 1) or memo['queue_time'] > 1):
+    if (msg.exec_type == MotionCommand.IMMEDIATE and (len(segment_list)  > 1) or memo['queue_time'] > .7):
         
         # But don't drop stop messages
         if sum (abs(e) for e in msg.joints) != 0:

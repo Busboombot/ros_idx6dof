@@ -60,7 +60,7 @@ def callback(data, memo):
         msg = MotionCommand(param_space=MotionCommand.JOINT_SPACE,
                             command_type=MotionCommand.V_COMMAND,
                             exec_type=MotionCommand.IMMEDIATE,
-                            t=.1,
+                            t=.08,
                             joints=velocities)
 
         msg.header.stamp = rospy.Time.now()
