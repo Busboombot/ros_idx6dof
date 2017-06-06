@@ -1,92 +1,184 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import rospy
-from motion_control.msg import VelocityCommand, Segment, JointState
-from trajectory import Proto, Command, freq_map
+from motion_control.msg import MotionCommand, MotorCommand, Segment, SegmentResponse
+from trajectory import ( Proto, Command, freq_map, TimeoutException, SegmentList, SegmentIterator, 
+                         SegmentError, VrOutOfRangeError ) 
 from time import sleep
+from Queue import Queue, Empty
+from threading import Thread
 
-def send_command(proto, memo, d, v0, v1, x):
 
+def add_segment_from_message(memo, segment_list, msg):
     
-    seq = memo['seq']
+    if (msg.exec_type == MotionCommand.IMMEDIATE and len(segment_list)  > 3):
+        pass
     
-    msg = Command(seq, 10, d, v0, v1, x)
-
-    proto.write(msg)
-
-    memo['seq'] = seq + 1
-
-
-def zero_velocity(event, proto, memo):
-    
-    v0 =  memo['last_v']
-    
-    if sum(v0) != 0: 
-        print("Zeroing Velocity")
-        dt = .25
-        v1 = [0]*6
-        x = [ .5*(v0_+v1_)*dt  for v0, v1 in zip(v0, v1) ]
-        send_command(proto, memo, dt, v0, v1, x)
-        memo['last_v'] = v1
-
-
-def send_callback(msg, args):
-
-    proto,memo = args
-
-    #if memo['timer'] is not None:
-    #    memo['timer'].shutdown()
-
-    v0 = memo['last_v'] # The last velocity
-    v1 = list(msg.v) # New velocity, from the velocity command, such as the joy_motion node 
-    
-    # x = vt 
-    x = [ .5*(v0_+v1_)*(msg.segment_duration/1000000.) for v0_, v1_ in zip(v0, v1) ]
-    
-    # Advance the position
-    memo['position'] = [ x_+xp_ for x_, xp_ in zip(x, memo['position'])]
-    
-    # Send the command to the step controller
-    # .
-    send_command(proto, memo, msg.segment_duration, v0, v1, x)
+    if msg.command_type == MotionCommand.V_COMMAND:
         
-    # set a timer to zero the velocity if we don't get another message in time. 
-    #memo['timer'] = rospy.Timer(rospy.Duration(msg.segment_duration-.05), 
-    #            lambda event: zero_velocity(event, proto, memo), oneshot=True)
+        if msg.t > 0:
+            try:
+                segment_list.add_velocity_segment(msg.joints,t=msg.t)
+            except SegmentError as e:
+                print("ERROR", e)
+            except VrOutOfRangeError as e:
+                print("ERROR", e)
+        else:
+            pass
         
-    #print msg
-    #jm = JointState(joints=memo['position'] ) 
-    #jm.header.stamp = rospy.Time.now()
-    #memo['pub'].publish(jm)
-      
-    memo['last_v'] = v1
-       
-    while len(proto)>2: # Allow the recieve buffer thread to clear
-        sleep(.05) 
+    else:
+        if msg.t > 0:
+            try:
+                segment_list.add_distance_segment(msg.joints,t=msg.t)
+            except SegmentError as e:
+                print("ERROR", e)
+            except VrOutOfRangeError as e:
+                print("ERROR", e)
+        else:
+            pass
+            
+
+def send_command_thread(memo):
     
-def recv_callback(m, resp):
-    pass
-    #print(m, resp)
+    queue = memo['queue']
+    proto = memo['proto']
+    
+    if not proto:
+        return
+    
+    sl = proto.segment_list
+    seq = 0
+
+    si  = SegmentIterator(sl)
+    
+    while True:
+        
+        no_data = False
+        queue_empty = False
+        
+        while True:
+            if proto.read_next() is False:
+                no_data = False
+                break
+        try:
+            msg = queue.get_nowait()
+          
+            add_segment_from_message(memo, sl, msg)
+        except Empty:
+            queue_empty = True
+        
+        # Try to leave a message in the segment list, so that the next one that comes in 
+        # can be linked to it without taking velocity to 0. 
+        if len(sl) > 1: #if memo['queue_time'] < .3:
+    
+            try:
+                s = next(si)
+            
+                segment_time = int(s.t_seg*1000000)
+                
+                if segment_time > 0:
+            
+                    msg = Command(seq, 10, 
+                            segment_time=int(s.t_seg*1000000), 
+                            v0=[ int(sj.v0) for sj in s.joints ],
+                            v1=[ int(sj.v1) for sj in s.joints ], 
+                            steps= [ int(sj.x) for sj in s.joints ])
+                    
+                    proto.write(msg)
+                    #print(memo['queue_time'], len(sl), msg)
+            
+            
+                    mcmsg = MotorCommand(
+                            seq = seq, 
+                            segment_time=int(s.t_seg*1000000), 
+                            v0=[ int(sj.v0) for sj in s.joints ],
+                            v1=[ int(sj.v1) for sj in s.joints ], 
+                            steps= [ int(sj.x) for sj in s.joints ])
+
+                    mcmsg.header.stamp = rospy.Time.now()
+
+                    memo['mcpub'].publish(mcmsg)
+                
+            
+                seq += 1
+            
+            except StopIteration:
+                pass
+        elif no_data and queue_empty:
+            print ("HERE")
+
+            
+        last_qt = memo['queue_time']
+            
+
+def message_callback(msg, memo):
+    memo['queue'].put(msg)
+
+
+def recv_callback(memo, proto, resp):
+  
+    msg = SegmentResponse(
+           seq=resp.seq,
+           code=resp.code,
+           queue_size=resp.queue_size,
+           queue_time=resp.queue_time,
+           queue_min_seq=resp.queue_min_seq,
+           min_char_read_time=resp.min_char_read_time,
+           max_char_read_time=resp.max_char_read_time,
+           min_loop_time=resp.min_loop_time,
+           max_loop_time=resp.max_loop_time,
+           #steps=resp.steps,
+           #encoder_diffs=resp.encoder_diffs
+    )
+
+    msg.header.stamp = rospy.Time.now()
+    
+    memo['pub'].publish(msg)
+   
+    memo['queue_time'] = float(resp.queue_time ) / 1e6
+   
+def shutdown(memo):
+     
+    memo['proto'].close
     
 def listener():
 
     rospy.init_node('motion_controller')
 
-    proto = Proto('/dev/arduino_due_host', callback=recv_callback).open()
-
-    pub = rospy.Publisher('motion_control/joints', JointState, queue_size=4)
-
+    pub = rospy.Publisher('motion_control/responses', SegmentResponse, queue_size=5)
+    
+    mcpub = rospy.Publisher('motion_control/motor_command', MotorCommand, queue_size=5)
+    
     memo = {
+        'queue': Queue(),
+        'proto': None,
         'pub': pub, 
+        'mcpub': mcpub,
         'seq': 0,
+        'queue_time': 0,
         'last_v': [0]*6,
         'timer': None,
-        'position': [0]*6
+        'position': [0]*6,
+        'timer': None
+        
     }
-
     
-    rospy.Subscriber("motion_control", VelocityCommand, send_callback, (proto,memo))
+    def recv_callback_wrapper(proto, resp):
+        recv_callback(memo, proto, resp) 
 
-    rospy.on_shutdown(lambda: proto.proto.close())
+    proto = Proto('/dev/arduino_due_host', a_max=100000, v_max=10000, callback=recv_callback_wrapper )
+    memo['proto'] = proto
+    proto.purge()
+    
+    worker = Thread(target=send_command_thread, args=(memo,))
+    worker.setDaemon(True)
+    worker.start()
+
+    rospy.Subscriber("motion_control/segment_command", MotionCommand, message_callback, memo)
+
+
+    rospy.on_shutdown(lambda: shutdown(memo))
+
 
     rospy.spin()
 
