@@ -9,10 +9,6 @@ from math import ceil
 
 N_AXES =6
 
-def response_callback(msg, memo):
-    
-    memo['queue_time'] = float(msg.queue_time ) / 1e6
-
 def timed_callback(event, memo):
 
     if memo['last_message'] is not None:
@@ -29,22 +25,8 @@ def timed_callback(event, memo):
    
 def callback(data, memo):
     
-    
     memo['last_message']  = data
-     
-    time = data.header.stamp.secs +  data.header.stamp.nsecs/1000000000.
   
-    dt = time-memo['last_time']
-    
-    dt = min(dt,1)
-    
-    if dt > 100:
-        memo['last_time'] = time
-        return 
-    
-    memo['last_time'] = time
-    
-    
     try:
         button = max([i for i,b in enumerate(data.buttons[:4])if b])
     except ValueError:
@@ -80,16 +62,12 @@ def listener():
 
     memo = {
         'pub': pub, 
-        'queue_time': 0,
         'last_message' : None,
-        'last_time': 0,
         'freq_map': freq_map,
         'last_velocities': [0]*6
     }
 
     rospy.Subscriber("joy", Joy, callback, memo)
-
-    rospy.Subscriber("motion_control/responses", SegmentResponse, response_callback, memo)
 
     rospy.Timer(rospy.Duration(.05), lambda event: timed_callback(event, memo))
 
