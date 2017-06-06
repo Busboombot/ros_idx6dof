@@ -44,8 +44,6 @@ def callback(data, memo):
     
     memo['last_time'] = time
     
-    if memo['queue_time'] > .5:
-        return 
     
     try:
         button = max([i for i,b in enumerate(data.buttons[:4])if b])
@@ -93,7 +91,7 @@ def listener():
 
     rospy.Subscriber("motion_control/responses", SegmentResponse, response_callback, memo)
 
-    rospy.Timer(rospy.Duration(.1), lambda event: timed_callback(event, memo))
+    rospy.Timer(rospy.Duration(.05), lambda event: timed_callback(event, memo))
 
     rospy.spin()
 
