@@ -2,4 +2,5 @@
   <node name="joystick" pkg="joy" type="joy_node" />
   <node name="joy_motion" pkg="joy_motion" type="listener.py" />
   <node name="motion_control" pkg="motion_control" type="controller.py" />
+  <node name="pendant" pkg="rosserial_python" type="serial_node.py" args="/dev/idxpendant"/>
 </launch>
