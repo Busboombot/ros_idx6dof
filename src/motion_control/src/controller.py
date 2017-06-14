@@ -11,8 +11,13 @@ from threading import Thread
 
 def add_segment_from_message(memo, segment_list, msg):
     
-    if (msg.exec_type == MotionCommand.IMMEDIATE and len(segment_list)  > 3):
-        pass
+    
+    # Drop IMMEDIATE messages when the queue is full
+    if (msg.exec_type == MotionCommand.IMMEDIATE and (len(segment_list)  > 1) or memo['queue_time'] > .7):
+        
+        # But don't drop stop messages
+        if sum (abs(e) for e in msg.joints) != 0:
+            return 
     
     if msg.command_type == MotionCommand.V_COMMAND:
         
@@ -67,9 +72,11 @@ def send_command_thread(memo):
         except Empty:
             queue_empty = True
         
+
         # Try to leave a message in the segment list, so that the next one that comes in 
         # can be linked to it without taking velocity to 0. 
-        if len(sl) > 1: #if memo['queue_time'] < .3:
+        # Also, allow the queue to exhaust if the final velocity is zero. 
+        if len(sl) > 1 or (len(sl) == 1 and sl.segments[0].x == 0): #if memo['queue_time'] < .3:
     
             try:
                 s = next(si)
@@ -112,6 +119,8 @@ def send_command_thread(memo):
             
 
 def message_callback(msg, memo):
+
+    
     memo['queue'].put(msg)
 
 
@@ -121,7 +130,7 @@ def recv_callback(memo, proto, resp):
            seq=resp.seq,
            code=resp.code,
            queue_size=resp.queue_size,
-           queue_time=resp.queue_time,
+           queue_time=float(resp.queue_time) / 1e6,
            queue_min_seq=resp.queue_min_seq,
            min_char_read_time=resp.min_char_read_time,
            max_char_read_time=resp.max_char_read_time,

@@ -1,0 +1,6 @@
+<launch>
+  <node name="joystick" pkg="joy" type="joy_node" />
+  <node name="keyboard" pkg="keyboard" type="keyboard" />
+  <node name="pendant" pkg="rosserial_python" type="serial_node.py" args="/dev/idxpendant"/>
+  <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" />
+</launch>
