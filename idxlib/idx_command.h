@@ -3,6 +3,7 @@
 
 #ifndef idx_command_h
 #define idx_command_h
+#ifdef _SAM3XA_
 
 #include <Arduino.h>
 #include <limits.h>
@@ -244,6 +245,7 @@ class IDXCommandPort {
         
     
 };
-    
+#endif // #ifdef _SAM3XA_
 #endif
+
 

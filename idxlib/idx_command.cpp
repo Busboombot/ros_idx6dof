@@ -4,7 +4,7 @@
 #include "idx_command.h"
 #include <Arduino.h>
 #include "CRC32.h"
-
+#ifdef _SAM3XA_
 // Wait for a header sync string, then read the entire header. 
 int IDXCommandBuffer::run(){
     
@@ -112,3 +112,4 @@ def fletcher16( data ):
     return sum2 << 8 | sum1;
 */
 
+#endif // _SAM3XA_
