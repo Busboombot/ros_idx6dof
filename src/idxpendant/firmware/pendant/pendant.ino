@@ -17,7 +17,7 @@ void setup()
 {
   nh.initNode();
   nh.advertise(pendant_pub);
-  nh.loginfo("Starting node");
+  nh.loginfo("Starting pendant arduino node");
   pendant.begin() ;
   nextTime = millis();    
 }

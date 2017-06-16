@@ -13,6 +13,6 @@ int8 param_space    # JOINT_SPACE or XYZ_SPACE
 int8 exec_type      # IMMEDIATE or QUEUED
 float32 t           # Common time for either X_COMMAND or V_COMMAND
 float32 x           # Common X distance for V_COMMAND
-float32 v           # Common Velocity for X_COMMAND
+float02    # Common Velocity for X_COMMAND
 float32[6] joints   # Joint values, either distance or velocity
 
