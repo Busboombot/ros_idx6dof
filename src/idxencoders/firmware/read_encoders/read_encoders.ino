@@ -39,11 +39,11 @@ class VelEncoder : public Encoder {
 
 VelEncoder encoders[] = {
   VelEncoder(22,23),
-  VelEncoder(24,25),
   VelEncoder(26,27),
-  VelEncoder(28,29),
   VelEncoder(30,31),
-  VelEncoder(32,33),
+  VelEncoder(34,35),
+  VelEncoder(38,39), 
+  VelEncoder(42,343),
 };
 
 
