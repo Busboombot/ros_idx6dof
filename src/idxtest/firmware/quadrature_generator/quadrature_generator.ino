@@ -71,6 +71,7 @@ class QuadratureGenerator {
 
     int32_t pos = 0;
 
+  
     int8_t steps[4] = {2, 3, 1, 0};
 
     bool limit_set = false;
@@ -158,19 +159,19 @@ char* mode_names[] = {
 
 
 int delays[] = {
-    0,
-    SEC_IN_US / 20000,
-    SEC_IN_US / 10000,
-    SEC_IN_US / 5000,
-    SEC_IN_US / 2500,
-    SEC_IN_US / 1000,
-    SEC_IN_US / 500,
-    SEC_IN_US / 250,
-    SEC_IN_US / 100,
-    SEC_IN_US / 50,
-    SEC_IN_US / 25,
-    SEC_IN_US / 10,
-    SEC_IN_US / 1,
+  0,
+  20000,
+  8192,
+  4096,
+  2048,
+  1024,
+  512,
+  256,
+  100,
+  50,
+  25,
+  10,
+  1,
 };
 
 size_t delay_array_size = sizeof delays / sizeof delays[0];
@@ -197,14 +198,14 @@ void setup(void) {
 
   // Initial values for modes and delays
   delay_index = 2;
-  delay_time = delays[delay_index];
+  steps_per_ud = delay_time = delays[delay_index];
   mode = 2;
-  steps_per_ud = ((int)(SEC_IN_US/delay_time));; // 2 s per cycle
+ 
   
   Timer3.attachInterrupt(read_write_keys);
   Timer3.start(100000); // .1 s
   
-  module.setDisplayToDecNumber(SEC_IN_US/delays[delay_index], 0, false);
+  module.setDisplayToDecNumber(delay_time, 0, false);
   module.setDisplayToString(mode_names[mode]);
 }
 
@@ -239,11 +240,9 @@ void read_write_keys(){
         }    
       } 
   
-      delay_time = delays[delay_index];
+      steps_per_ud =  delay_time = delays[delay_index];
 
-      int steps_per_sec = ((int)(SEC_IN_US/delay_time)) * dir;
-
-      steps_per_ud = ((int)(SEC_IN_US/delay_time));
+      int steps_per_sec = delay_time * dir;
 
       module.setDisplayToSignedDecNumber( steps_per_sec, 0, delay_time==0);
       module.setDisplayToString(mode_names[mode]);
@@ -257,6 +256,8 @@ void read_write_keys(){
 
 }
 
+int idx = 0;
+
 void loop() {
 
   for (int i = 0; i < 6; i++) {
@@ -265,8 +266,10 @@ void loop() {
     } else {
       qg[i]->stepDown();
     }
+ 
   }
 
+ 
   /// Change direction in u/d mode
   if (mode == 2 && (abs(qg[0]->getPosition())  > steps_per_ud)){
 
@@ -279,13 +282,12 @@ void loop() {
   }
 
   if(old_dir != dir){
-
     module.setLED(dir > 0 ? TM1638_COLOR_RED : TM1638_COLOR_NONE, 0);
-    
     old_dir = dir;
   }
 
-  delayMicroseconds(delay_time);
+  delayMicroseconds(SEC_IN_US/delay_time);
+  idx++;
 
   
 
