@@ -1,0 +1,13 @@
+Header header
+int16 seq
+int16 code
+int16 queue_size 
+float32 queue_time 
+int16 queue_min_seq 
+int16 min_char_read_time 
+int16 max_char_read_time 
+int16 min_loop_time 
+int16 max_loop_time 
+int16 padding 
+int32[6] steps 
+int16[6] encoder_diffs
