@@ -13,14 +13,14 @@ import time
 
 def add_segment_from_message(memo,segment_list, msg):
     
-    print("A")
-    print(msg.exec_type)
+    #print("A")
+    #print(msg.exec_type)
     # Drop IMMEDIATE messages when the queue is full
     if (msg.exec_type == MotionCommand.IMMEDIATE and (len(segment_list)  > 1 or memo['queue_time'] > .7)):
-        print(msg.exec_type)
+        #print(msg.exec_type)
         # But don't drop stop messages
         if sum (abs(e) for e in msg.joints) != 0:
-            print("Stopping")
+           # print("Stopping")
             return 
     
     if msg.command_type == MotionCommand.V_COMMAND:
@@ -50,7 +50,7 @@ def add_segment_from_message(memo,segment_list, msg):
             
 def send_command_thread(msg,memo):
     
-    print("C")
+   # print("C")
     queue = memo['queue']
     
     sl = SegmentList(6, 10000, 100000, None)
@@ -60,7 +60,7 @@ def send_command_thread(msg,memo):
     
     while True:
         
-        print("D")
+      #  print("D")
         no_data = False
         queue_empty = False
         add_segment_from_message(memo,sl, msg)
@@ -75,7 +75,7 @@ def send_command_thread(msg,memo):
                 segment_time = int(s.t_seg*1000000)
                 
                 if segment_time > 0:  
-                    print("E")                 
+                   # print("E")                 
                     mcmsg = MotorCommand(
                             seq = seq, 
                             segment_time=int(s.t_seg*1000000), 
@@ -125,11 +125,11 @@ def listener():
     rospy.Subscriber("motion_control/segment_command", MotionCommand, send_command_thread,memo)
 
     #############################
-    print 'Program started'
+    print ("Program started")
     vrep.simxFinish(-1) # just in case, close all opened connections
-    clientID=vrep.simxStart('10.0.40.73',19997,True,True,5000,5)
+    clientID=vrep.simxStart('192.168.1.10',19997,True,True,5000,5)
     if clientID!=-1:
-        print 'Connected to remote API server'
+        print ("Connected to remote API server")
 
         opm = vrep.simx_opmode_blocking
 
@@ -140,15 +140,15 @@ def listener():
 
         errorCode,shoulder_handle=vrep.simxGetObjectHandle(clientID,'shoulder1',vrep.simx_opmode_oneshot_wait)
         errorCode,UpperArm_handle=vrep.simxGetObjectHandle(clientID,'shoulder2',vrep.simx_opmode_oneshot_wait)
-
+        
         for s, h in zip(str_d, handles):
            vrep.simxSetJointPosition(clientID, h, 0, opm)
 
         for s, h in zip(str_d, handles):
            print(s,h)
            #vrep.simxSetJointTargetPosition(clientID, h, math.radians(60), opm)
-           vrep.simxSetJointTargetVelocity(clientID, shoulder_handle, memo[last_v[1]]*0.05, opm)
-           vrep.simxSetJointTargetPosition(clientID, shoulder_handle, memo[position[1]]*0.05, opm)
+           vrep.simxSetJointTargetVelocity(clientID, shoulder_handle, memo['last_v'][0]*0.05, opm)
+           vrep.simxSetJointTargetPosition(clientID, shoulder_handle, memo['position'][0]*0.05, opm)
            #vrep.simxSetJointTargetVelocity(clientID, UpperArm_handle, 30, opm)
            #vrep.simxSetJointTargetPosition(clientID, UpperArm_handle, 60,opm)
         dt = 10.0
@@ -182,9 +182,9 @@ def listener():
 
     else:
 
-        print 'Failed connecting to remote API server'
+        print ("Failed connecting to remote API server")
 
-    print 'Program ended'
+    print ("Program ended")
     
     #############################
 
