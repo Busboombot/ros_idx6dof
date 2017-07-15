@@ -173,11 +173,14 @@ include_directories(
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+ #install(FILES
+   # myfile1
+   # myfile2
+  # /home/suddarsun/Desktop/V-REP_PRO_EDU_V3_4_0_Linux/programming/remoteApiBindings/lib/lib/64Bit
+#remoteApi.so
+  # DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+ #)
+
 
 #############
 ## Testing ##
