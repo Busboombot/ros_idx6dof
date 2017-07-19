@@ -18,6 +18,8 @@ if clientID!=-1:
 
     errorCode,shoulder_handle=vrep.simxGetObjectHandle(clientID,'shoulder1',vrep.simx_opmode_oneshot_wait)
     errorCode,UpperArm_handle=vrep.simxGetObjectHandle(clientID,'shoulder2',vrep.simx_opmode_oneshot_wait)
+    errorCode,waist_handle=vrep.simxGetObjectHandle(clientID,'waist',vrep.simx_opmode_oneshot_wait)
+    
 
     for s, h in zip(str_d, handles):
        vrep.simxSetJointPosition(clientID, h, 0, opm)
@@ -29,6 +31,7 @@ if clientID!=-1:
        vrep.simxSetJointTargetPosition(clientID, shoulder_handle, 30, opm)
        vrep.simxSetJointTargetVelocity(clientID, UpperArm_handle, 30, opm)
        vrep.simxSetJointTargetPosition(clientID, UpperArm_handle, 60,opm)
+       vrep.simxSetJointTargetPosition(clientID, waist_handle, 60,opm)
     dt = 10.0
 
     vrep.simxSetFloatingParameter(clientID,
@@ -53,7 +56,7 @@ if clientID!=-1:
         vrep.simxSynchronousTrigger(clientID)
         t += dt
 
-        time.sleep(1)
+        time.sleep(0.05)
 
     vrep.simxStopSimulation(clientID,vrep.simx_opmode_oneshot_wait);
     vrep.simxFinish(clientID)
