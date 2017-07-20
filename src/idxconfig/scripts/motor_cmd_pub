@@ -1,0 +1,224 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import rospy
+from motion_control.msg import MotionCommand, MotorCommand, Segment, SegmentResponse
+from trajectory import (Command, freq_map, TimeoutException, SegmentList, SegmentIterator, SegmentError, VrOutOfRangeError ) 
+from time import sleep
+from Queue import Queue, Empty
+from threading import Thread
+import vrep
+import math
+import time
+
+
+def add_segment_from_message(memo,segment_list, msg):
+    
+    #print("A")
+    #print(msg.exec_type)
+    # Drop IMMEDIATE messages when the queue is full
+    if (msg.exec_type == MotionCommand.IMMEDIATE and (len(segment_list)  > 1 or memo['queue_time'] > .7)):
+        #print(msg.exec_type)
+        # But don't drop stop messages
+        if sum (abs(e) for e in msg.joints) != 0:
+           # print("Stopping")
+            return 
+    
+    if msg.command_type == MotionCommand.V_COMMAND:
+        
+        if msg.t > 0:
+            try:
+                segment_list.add_velocity_segment(msg.joints,t=msg.t)
+            except SegmentError as e:
+                print("ERROR", e)
+            except VrOutOfRangeError as e:
+                print("ERROR", e)
+        else:
+            print("No t for v")
+            pass
+        
+    else:
+        if msg.t > 0:
+            try:
+                segment_list.add_distance_segment(msg.joints,t=msg.t)
+            except SegmentError as e:
+                print("ERROR", e)
+            except VrOutOfRangeError as e:
+                print("ERROR", e)
+        else: 
+            print("No an X")
+            pass
+            
+def send_command_thread(msg,memo):
+    
+   # print("C")
+    queue = memo['queue']
+    
+    sl = SegmentList(6, 10000, 100000, None)
+    seq = 0
+
+    si  = SegmentIterator(sl)
+    
+    while True:
+        
+      #  print("D")
+        no_data = False
+        queue_empty = False
+        add_segment_from_message(memo,sl, msg)
+              # Try to leave a message in the segment list, so that the next one that comes in 
+        # can be linked to it without taking velocity to 0. 
+        # Also, allow the queue to exhaust if the final velocity is zero. 
+        if len(sl) > 1 or (len(sl) == 1 and sl.segments[0].x == 0): #if memo['queue_time'] < .3:
+    
+            try:
+                s = next(si)
+            
+                segment_time = int(s.t_seg*1000000)
+                
+                if segment_time > 0:  
+                   # print("E")                 
+                    mcmsg = MotorCommand(
+                            seq = seq, 
+                            segment_time=int(s.t_seg*1000000), 
+                            v0=[ int(sj.v0) for sj in s.joints ],
+                            v1=[ int(sj.v1) for sj in s.joints ], 
+                            steps= [ int(sj.x) for sj in s.joints ])
+
+                    msg.header.stamp = rospy.Time.now()
+
+                    memo['mcpub'].publish(mcmsg)
+                    
+            
+                seq += 1
+            
+            except StopIteration:
+                pass
+        elif no_data and queue_empty:
+            print ("F")
+
+            
+        last_qt = memo['queue_time']
+        memo['queue'].put(msg)    
+
+
+
+    
+    
+   
+    
+def listener():
+
+    rospy.init_node('motor_cmds')
+    
+    mcpub = rospy.Publisher('motion_control/motor_command', MotorCommand, queue_size=5)
+    
+    memo = {
+        'queue': Queue(),
+        'mcpub': mcpub,
+        'seq': 0,
+        'queue_time': 0,
+        'last_v': [0]*6,
+        'timer': None,
+        'position': [0]*6,
+        'timer': None
+        
+    }
+    rospy.Subscriber("motion_control/segment_command", MotionCommand, send_command_thread,memo)
+
+    #############################
+    ONE_REV = 360 #degrees
+    STEPS_TO_REV = 65536 # Steps in one rev
+    
+    # 360 degrees = STEPS_TO_REV Dteps 
+    # POS_DEGREES = POS_STEPS
+    # POS_DEGREES = (ONE_REV * POS_STEPS) / STEPS_TO_REV
+    
+    print ("Program started")
+    vrep.simxFinish(-1) # just in case, close all opened connections
+    clientID=vrep.simxStart('192.168.1.10',19997,True,True,5000,5)
+    if clientID!=-1:
+        print ("Connected to remote API server")
+
+        opm = vrep.simx_opmode_blocking
+
+        #res,objects=vrep.simxGetObjects(clientID,vrep.sim_handle_all, opm)
+
+        code, handles, int_d, float_d, str_d = \
+           vrep.simxGetObjectGroupData(clientID, vrep.sim_object_joint_type, 0, opm)
+           
+        # Extracting handle for the waist
+        errorCode,waist=vrep.simxGetObjectHandle(clientID,'waist',vrep.simx_opmode_oneshot_wait)
+        # Extracting handle for shoulder 1
+        errorCode,shoulder_1=vrep.simxGetObjectHandle(clientID,'shoulder1',vrep.simx_opmode_oneshot_wait)
+        # Extracting handle for shoulder 2
+        errorCode,shoulder_2=vrep.simxGetObjectHandle(clientID,'shoulder2',vrep.simx_opmode_oneshot_wait)
+        # Extracting handle for the elbow
+        errorCode,elbow=vrep.simxGetObjectHandle(clientID,'elbow',vrep.simx_opmode_oneshot_wait)
+        # Extracting handle for the wrist 1
+        errorCode,wrist_1=vrep.simxGetObjectHandle(clientID,'wrist1',vrep.simx_opmode_oneshot_wait)
+        # Extracting handle for the wrist 2
+        errorCode,wrist_2=vrep.simxGetObjectHandle(clientID,'wrist2',vrep.simx_opmode_oneshot_wait)
+        
+        for s, h in zip(str_d, handles):
+           vrep.simxSetJointPosition(clientID, h, 0, opm)
+
+        for s, h in zip(str_d, handles):
+           print(s,h)
+           #vrep.simxSetJointTargetPosition(clientID, h, math.radians(60), opm)
+           vrep.simxSetJointTargetVelocity(clientID, h, (memo['last_v'][0]*ONE_REV)/STEPS_TO_REV, opm)
+           
+           vrep.simxSetJointTargetPosition(clientID, waist, (memo['position'][0]*ONE_REV)/STEPS_TO_REV, opm)
+           vrep.simxSetJointTargetPosition(clientID, shoulder_1, (memo['position'][1]*ONE_REV)/STEPS_TO_REV, opm)
+           vrep.simxSetJointTargetPosition(clientID, shoulder_@, (memo['position'][2]*ONE_REV)/STEPS_TO_REV, opm)
+           vrep.simxSetJointTargetPosition(clientID, elbow, (memo['position'][3]*ONE_REV)/STEPS_TO_REV, opm)
+           vrep.simxSetJointTargetPosition(clientID, wrist_1, (memo['position'][4]*ONE_REV)/STEPS_TO_REV, opm)
+           vrep.simxSetJointTargetPosition(clientID, wrist_2, (memo['position'][5]*ONE_REV)/STEPS_TO_REV, opm)
+          
+        dt = 10.0
+
+        vrep.simxSetFloatingParameter(clientID,
+                vrep.sim_floatparam_simulation_time_step,
+                dt, # specify a simulation time step
+                vrep.simx_opmode_oneshot)
+
+        vrep.simxSynchronous(clientID,True)
+
+        vrep.simxStartSimulation(clientID, vrep.simx_opmode_oneshot)
+
+
+        t = 1.0
+
+        while t < 1000:
+
+            for s, h in zip(str_d, handles):
+               ret, p = vrep.simxGetJointPosition(clientID, h, opm)
+               print(h,p)
+            print("-----")
+
+            vrep.simxSynchronousTrigger(clientID)
+            t += dt
+
+            time.sleep(1)
+
+        vrep.simxStopSimulation(clientID,vrep.simx_opmode_oneshot_wait);
+        vrep.simxFinish(clientID)
+
+    else:
+
+        print ("Failed connecting to remote API server")
+
+    print ("Program ended")
+    
+    #############################
+
+
+
+
+
+
+    #rospy.on_shutdown(lambda: shutdown(memo))
+
+
+    rospy.spin()
+
+if __name__ == '__main__':
+    listener()
