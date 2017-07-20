@@ -1,0 +1,10 @@
+<launch>
+
+	<machine name="master" address="localhost" default="true"/>
+
+	<node name="key_pub" pkg="keyboard_action" type="keyboard_action_sub"/>
+	<node name="Key" pkg="keyboard" type="keyboard"/>
+	<node name="motor_cmds" pkg="motor_cmd" type="motor_cmd_pub"/>
+	
+
+</launch>
