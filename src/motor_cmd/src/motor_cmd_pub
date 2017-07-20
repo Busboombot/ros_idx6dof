@@ -126,7 +126,7 @@ def listener():
 
     #############################
     ONE_REV = 360 #degrees
-    STEPS_TO_REV = 15125 # Steps in one rev
+    STEPS_TO_REV = 65536 # Steps in one rev
     
     # 360 degrees = STEPS_TO_REV Dteps 
     # POS_DEGREES = POS_STEPS
@@ -164,7 +164,7 @@ def listener():
         for s, h in zip(str_d, handles):
            print(s,h)
            #vrep.simxSetJointTargetPosition(clientID, h, math.radians(60), opm)
-           vrep.simxSetJointTargetVelocity(clientID, h, memo['last_v'][0]*0.05, opm)
+           vrep.simxSetJointTargetVelocity(clientID, h, (memo['last_v'][0]*ONE_REV)/STEPS_TO_REV, opm)
            
            vrep.simxSetJointTargetPosition(clientID, waist, (memo['position'][0]*ONE_REV)/STEPS_TO_REV, opm)
            vrep.simxSetJointTargetPosition(clientID, shoulder_1, (memo['position'][1]*ONE_REV)/STEPS_TO_REV, opm)
