@@ -1,6 +1,6 @@
 <!--waist link -> shoulderA link -> shoulderB link -> elbow link -> wristA link -> wristB link-->
 
-<robot name="BusboomBot">
+<robot name="ArmBot">
 	<!--Links-->
 	<link name="waistLink">
 		<visual>
