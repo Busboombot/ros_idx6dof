@@ -134,7 +134,7 @@ def listener():
     
     print ("Program started")
     vrep.simxFinish(-1) # just in case, close all opened connections
-    clientID=vrep.simxStart('192.168.1.133',19997,True,True,5000,5)
+    clientID=vrep.simxStart('192.168.1.10',19997,True,True,5000,5)
     if clientID!=-1:
         print ("Connected to remote API server")
 
@@ -168,92 +168,46 @@ def listener():
            
            vrep.simxSetJointTargetPosition(clientID, waist, (memo['position'][0]*ONE_REV)/STEPS_TO_REV, opm)
            vrep.simxSetJointTargetPosition(clientID, shoulder_1, (memo['position'][1]*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, shoulder_2, (memo['position'][2]*ONE_REV)/STEPS_TO_REV, opm)
+           vrep.simxSetJointTargetPosition(clientID, shoulder_@, (memo['position'][2]*ONE_REV)/STEPS_TO_REV, opm)
            vrep.simxSetJointTargetPosition(clientID, elbow, (memo['position'][3]*ONE_REV)/STEPS_TO_REV, opm)
            vrep.simxSetJointTargetPosition(clientID, wrist_1, (memo['position'][4]*ONE_REV)/STEPS_TO_REV, opm)
            vrep.simxSetJointTargetPosition(clientID, wrist_2, (memo['position'][5]*ONE_REV)/STEPS_TO_REV, opm)
           
-    
-           dt = 50.0
+        dt = 10.0
 
-           vrep.simxSetFloatingParameter(clientID,
-                    vrep.sim_floatparam_simulation_time_step,
-                    dt, # specify a simulation time step
-                    vrep.simx_opmode_oneshot)
+        vrep.simxSetFloatingParameter(clientID,
+                vrep.sim_floatparam_simulation_time_step,
+                dt, # specify a simulation time step
+                vrep.simx_opmode_oneshot)
 
-           vrep.simxSynchronous(clientID,True)
+        vrep.simxSynchronous(clientID,True)
 
-           vrep.simxStartSimulation(clientID, vrep.simx_opmode_oneshot)
+        vrep.simxStartSimulation(clientID, vrep.simx_opmode_oneshot)
 
 
-           t = 1.0
+        t = 1.0
 
-           while t < 1000:
+        while t < 1000:
 
-               for s, h in zip(str_d, handles):
-                  ret, p = vrep.simxGetJointPosition(clientID, h, opm)
-                  print(h,p)
-               print("-----")
+            for s, h in zip(str_d, handles):
+               ret, p = vrep.simxGetJointPosition(clientID, h, opm)
+               print(h,p)
+            print("-----")
 
-               vrep.simxSynchronousTrigger(clientID)
-               t += dt
+            vrep.simxSynchronousTrigger(clientID)
+            t += dt
 
-               time.sleep(1)
+            time.sleep(1)
 
-       # vrep.simxStopSimulation(clientID,vrep.simx_opmode_oneshot_wait);
-       # vrep.simxFinish(clientID)
+        vrep.simxStopSimulation(clientID,vrep.simx_opmode_oneshot_wait);
+        vrep.simxFinish(clientID)
 
     else:
 
         print ("Failed connecting to remote API server")
 
-
-
-    for s, h in zip(str_d, handles):
-           print ("Movement II") 
-           print(s,h)
-           #vrep.simxSetJointTargetPosition(clientID, h, math.radians(60), opm)
-           vrep.simxSetJointTargetVelocity(clientID, h, (memo['last_v'][0]*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, waist, (800*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, shoulder_1, (800*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, shoulder_2, (800*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, elbow, (800*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, wrist_1, (memo['position'][4]*ONE_REV)/STEPS_TO_REV, opm)
-           vrep.simxSetJointTargetPosition(clientID, wrist_2, (memo['position'][5]*ONE_REV)/STEPS_TO_REV, opm)
-           
-          
-          
-	   
-           dt = 50.0
-
-           vrep.simxSetFloatingParameter(clientID,
-                    vrep.sim_floatparam_simulation_time_step,
-                    dt, # specify a simulation time step
-                    vrep.simx_opmode_oneshot)
-
-           vrep.simxSynchronous(clientID,True)
-           vrep.simxStartSimulation(clientID, vrep.simx_opmode_oneshot)
-
-
-           t = 1.0
-
-           while t < 1000:
-
-               for s, h in zip(str_d, handles):
-                  ret, p = vrep.simxGetJointPosition(clientID, h, opm)
-                  print(h,p)
-               print("-----")
-
-               vrep.simxSynchronousTrigger(clientID)
-               t += dt
-
-               time.sleep(1)
-
-           print ("Program ended")
-           vrep.simxStopSimulation(clientID,vrep.simx_opmode_oneshot_wait);
-           vrep.simxFinish(clientID)
+    print ("Program ended")
     
-        
     #############################
 
 
