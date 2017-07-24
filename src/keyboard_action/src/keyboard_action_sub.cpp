@@ -36,7 +36,7 @@ void Key_IP(const keyboard::Key::ConstPtr& k){
 	   else if(nax)
 		 ax.dir = -1;
 
-	if(k->code == 113 || k->code == 119)
+	   if(k->code == 113 || k->code == 119)
 	   ax.axis=0;
 	   else if(k->code == 97 || k->code == 115)
 	   ax.axis=1;
@@ -70,17 +70,19 @@ void Key_IP(const keyboard::Key::ConstPtr& k){
  if (pax || nax) {
    dist[ax.axis] = 800*ax.dir;
   }
-/*
-	 if((k->code == 305 || k->code == 306)) {
-   dist[ax.axis] = *ax.dir;
+
+ if((k->code == 305 || k->code == 306)) {
+   dist[ax.axis] = 4192*ax.dir;
    }
-    else if((k->code == 304 || k->code == 303)) {
+   else if((k->code == 304 || k->code == 303)) {
     dist[ax.axis] =  8000*ax.dir;
    }
 /**/
 
    if(k->pressed == 0 && (pax == 1 || nax == 1 ))
    dist[ax.axis]=0;
+    
+
 /*
     else if(k->pressed == 0 && hvel == 1)
     dist[ax.axis]=500*ax.dir;
@@ -120,8 +122,9 @@ int main(int argc, char **argv)
     for (int i=0;i<6;i++){
     msg.joints[i]=dist[i];
     }
-
+  if(msg.t > 0)	
   control_pub.publish(msg);
+
   msg.header.stamp = ros::Time::now();
   ros::spinOnce();
   loop_rate.sleep();
