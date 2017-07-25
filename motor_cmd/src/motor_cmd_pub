@@ -11,12 +11,11 @@ import math
 import time
 
 
-def add_segment_from_message(memo,segment_list, msg):
+def add_segment_from_message(memo, msg):
     
-    #print("A")
     #print(msg.exec_type)
     # Drop IMMEDIATE messages when the queue is full
-    if (msg.exec_type == MotionCommand.IMMEDIATE and (len(segment_list)  > 1 or memo['queue_time'] > .7)):
+    if (msg.exec_type == MotionCommand.IMMEDIATE and len(memo['sl'])  > 1):
         # But don't drop stop messages
         if sum (abs(e) for e in msg.joints) != 0:
            # print("Stopping")
@@ -26,7 +25,7 @@ def add_segment_from_message(memo,segment_list, msg):
         
         if msg.t > 0:
             try:
-                segment_list.add_velocity_segment(msg.joints,t=msg.t)
+                memo['sl'].add_velocity_segment(msg.joints,t=msg.t)
             except SegmentError as e:
                 print("ERROR", e)
             except VrOutOfRangeError as e:
@@ -38,7 +37,8 @@ def add_segment_from_message(memo,segment_list, msg):
     else:
         if msg.t > 0:
             try:
-                segment_list.add_distance_segment(msg.joints,t=msg.t)
+                memo['sl'].add_distance_segment(msg.joints,t=msg.t)
+                print("Added Distance Segments")
             except SegmentError as e:
                 print("ERROR", e)
             except VrOutOfRangeError as e:
@@ -50,53 +50,51 @@ def add_segment_from_message(memo,segment_list, msg):
 def send_command_thread(msg,memo):
     
    # print("C")
-    queue = memo['queue']
-    
-    sl = SegmentList(6, 10000, 100000, None)
+    #queue = memo['queue']
     seq = 0
 
-    si  = SegmentIterator(sl)
+    si  = SegmentIterator(memo['sl'])
     
-    while True:
-        
-      #  print("D")
-        no_data = False
-        queue_empty = False
-        add_segment_from_message(memo,sl, msg)
-              # Try to leave a message in the segment list, so that the next one that comes in 
+
+    no_data = False
+    queue_empty = False
+    add_segment_from_message(memo, msg)
+    print("Back to send_command_thread function")
+    print(len(memo['sl']))
+    print(memo['sl'].segments[0].x)
+        # Try to leave a message in the segment list, so that the next one that comes in 
         # can be linked to it without taking velocity to 0. 
         # Also, allow the queue to exhaust if the final velocity is zero. 
-        if len(sl) > 1 or (len(sl) == 1 and sl.segments[0].x == 0): #if memo['queue_time'] < .3:
-    
-            try:
-                s = next(si)
-            
-                segment_time = int(s.t_seg*1000000)
+    if len(memo['sl']) > 1 or (len(memo['sl']) == 1 and memo['sl'].segments[0].x == 0): 
+          print("Entering first  'if' statement in send_command_thread")
+          try:
+       	     s = next(si)
+             segment_time = int(s.t_seg*1000000)
                 
-                if segment_time > 0:  
-                   # print("E")                 
-                    mcmsg = MotorCommand(
-                            seq = seq, 
-                            segment_time=int(s.t_seg*1000000), 
-                            v0=[ int(sj.v0) for sj in s.joints ],
-                            v1=[ int(sj.v1) for sj in s.joints ], 
-                            steps= [ int(sj.x) for sj in s.joints ])
+             if segment_time > 0:  
+                 print("segment_time is > 0")                 
+                 mcmsg = MotorCommand(
+                         seq = seq, 
+                         segment_time=int(s.t_seg*1000000), 
+                         v0=[ int(sj.v0) for sj in s.joints ],
+                         v1=[ int(sj.v1) for sj in s.joints ], 
+                         steps= [ int(sj.x) for sj in s.joints ])
+    
+                 msg.header.stamp = rospy.Time.now()
+                 print("Publishing Message")
+                 memo['mcpub'].publish(mcmsg)
+                 print("Published Message")
 
-                    msg.header.stamp = rospy.Time.now()
+             seq += 1
+            
+          except StopIteration:
+               pass
 
-                    memo['mcpub'].publish(mcmsg)
-                    
-            
-                seq += 1
-            
-            except StopIteration:
-                pass
-        elif no_data and queue_empty:
-            print ("F")
+    elif no_data and queue_empty:
+         print ("HERE")
 
-            
-        last_qt = memo['queue_time']
-        memo['queue'].put(msg)    
+
+     # memo['queue'].put(msg)    
 
 
 
@@ -111,14 +109,10 @@ def listener():
     mcpub = rospy.Publisher('motion_control/motor_command', MotorCommand, queue_size=5)
     
     memo = {
-        'queue': Queue(),
+        'sl': SegmentList(6, 10000, 100000, None),
         'mcpub': mcpub,
         'seq': 0,
-        'queue_time': 0,
-        'last_v': [0]*6,
-        'timer': None,
-        'position': [0]*6,
-        'timer': None
+        'queue_time': 0
         
     }
     rospy.Subscriber("motion_control/segment_command", MotionCommand, send_command_thread,memo)
@@ -130,3 +124,5 @@ def listener():
 
 if __name__ == '__main__':
     listener()
+			
+			
