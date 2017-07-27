@@ -97,7 +97,7 @@ def listener():
     rospy.init_node('mtr_cmd_sim')
     print ("Program started")
     vrep.simxFinish(-1) # just in case, close all opened connections
-    ip='192.168.6.175'#rospy.get_param("/vrep_ip") # Gets ip from the param server
+    ip=rospy.get_param("/vrep_ip") # Gets ip from the param server
     clientID=vrep.simxStart(ip,19997,True,True,5000,5)
     if clientID!=-1:
         print ("Connected to remote API server")
