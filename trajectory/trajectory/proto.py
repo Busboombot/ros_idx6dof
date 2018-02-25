@@ -13,6 +13,9 @@ from .util import s32tou
 from Queue import Queue
 
 
+# TODO! Consider using COBS for encoding packets
+# https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing
+
 class TimeoutException(Exception):
     pass
 
@@ -114,16 +117,24 @@ class Proto(object):
 
         return False
 
-    def wait_backlog(self, n):
+    @property
+    def backlog(self):
+        return len(self.sent)
+
+    def wait_backlog(self, n, timeout = 10):
         """Read next until the backlog is less than n"""
 
+        t = time()
 
         while True:
-            if self.read_next() is False:
-                break
+            if self.read_next():
+                t = time()
                 
-            if len(self.sent) <= n:
-                return
+            if self.backlog <= n:
+                return True
+
+            if time() > t + timeout:
+                raise TimeoutException()
 
     def read_next(self, timeout=None):
         """Read a response, ACK or DONE. Returns when input is exhausted or a response is available. """
@@ -144,6 +155,7 @@ class Proto(object):
                 if sync_idx != 0:
                     # The sync string isn't the first two chars in the buffer, so there is garbage.
                     print("GARB", self.buf[:sync_idx])
+                    continue
 
                 response = Response(self.buf[sync_idx:sync_idx + Response.size])
 

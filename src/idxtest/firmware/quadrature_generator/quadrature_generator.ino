@@ -45,102 +45,12 @@
 #include <digitalWriteFast.h>
 #include <math.h>
 #include <DueTimer.h>
+#include "idx_quadgen.h"
 
-
-#define ENC_STPS_PER_INDEX 8192 // Steps per encoder revolution
-#define ENC_STPS_PER_ROT ENC_STPS_PER_INDEX*8 // Steps per axis revolution
 
 #define QUAD_PIN_0 22 // A output for Axis 0
 
 #define SEC_IN_US 1000000 // 1M icro seconds in a second
-
-// Speedy output sets and clears on the Due, maybe others. 
-#define fastSet(pin) (digitalPinToPort(pin)->PIO_SODR |= digitalPinToBitMask(pin) )
-#define fastClear(pin) (digitalPinToPort(pin)->PIO_CODR |= digitalPinToBitMask(pin) )
-#define fastWrite(pin, value) ( value ? fastSet(pin) : fastClear(pin)   )
-
-/* Quarature Encoder Class. Represents one axis. */
-class QuadratureGenerator {
-
-  private:
-
-    uint8_t a_pin;
-    uint8_t b_pin;
-    uint8_t i_pin;
-    uint8_t l_pin;
-
-    int32_t pos = 0;
-
-  
-    int8_t steps[4] = {2, 3, 1, 0};
-
-    bool limit_set = false;
-    bool limit_changed = false;
-
-  public:
-
-    inline QuadratureGenerator(uint8_t a_pin, uint8_t b_pin, uint8_t i_pin, uint8_t l_pin)
-      : a_pin(a_pin), b_pin(b_pin), i_pin(i_pin), l_pin(l_pin) {
-
-      pinMode(a_pin, OUTPUT);
-      pinMode(b_pin, OUTPUT);
-      pinMode(i_pin, OUTPUT);
-      pinMode(l_pin, OUTPUT);
-
-    }
-
-    inline void step(int8_t dir) {
-
-      pos += dir;
-      int32_t apos = abs(pos);
-
-      int8_t bits = steps[apos % 4];
-
-      fastWrite(a_pin, bits >> 1); // Write the A channel
-      fastWrite(b_pin, bits & 1);  // Write the B channel
-
-      if ( (apos % ENC_STPS_PER_INDEX) == 0) {
-        fastSet(i_pin);
-      } else {
-        fastClear(i_pin);
-      }
-
-      if ( (apos % ENC_STPS_PER_ROT - ENC_STPS_PER_ROT / 2)   > 0 ) {
-        fastSet(l_pin);
-        if (limit_set != true) {
-          limit_changed = true;
-        }
-        limit_set = true;
-      } else {
-        fastClear(l_pin);
-        if (limit_set != false) {
-          limit_changed = true;
-        }
-        limit_set = false;
-      }
-
-    }
-
-    inline void stepUp(void) {
-      step(1);
-    }
-
-    inline void stepDown(void) {
-      step(-1);
-    }
-
-    inline int32_t getPosition(void) {
-      return pos;
-    }
-
-    inline bool getLimitChanged(){
-      return limit_changed;
-    }
-
-    inline bool getLimitSet(){
-      return limit_set;
-    }
-};
 
 
 QuadratureGenerator **qg  = new QuadratureGenerator*[6];
@@ -196,18 +106,18 @@ void setup(void) {
         );
   }
 
-  // Initial values for modes and delays
-  delay_index = 2;
-  steps_per_ud = delay_time = delays[delay_index];
-  mode = 2;
- 
-  
-  Timer3.attachInterrupt(read_write_keys);
-  Timer3.start(100000); // .1 s
-  
-  module.setDisplayToDecNumber(delay_time, 0, false);
-  module.setDisplayToString(mode_names[mode]);
-}
+    // Initial values for modes and delays
+    delay_index = 2;
+    steps_per_ud = delay_time = delays[delay_index];
+    mode = 1;
+   
+    
+    Timer3.attachInterrupt(read_write_keys);
+    Timer3.start(100000); // .1 s
+    
+    module.setDisplayToDecNumber(delay_time, 0, false);
+    module.setDisplayToString(mode_names[mode]);
+  }
 
 // Timer interrupt routine for reading the keys  and setting the 
 // frequency display. 
@@ -229,7 +139,7 @@ void read_write_keys(){
         mode = (mode+1)%3;
 
         switch(mode){
-          case 1:
+          case 0:
             // Up
             dir = 1;
             break;
@@ -262,16 +172,17 @@ void loop() {
 
   for (int i = 0; i < 6; i++) {
     if (dir > 0) {
-      qg[i]->stepUp();
+      qg[i]->setDirection(IDXStepGenerator::CW);
     } else {
-      qg[i]->stepDown();
+      qg[i]->setDirection(IDXStepGenerator::CCW);
     }
+    qg[i]->stepAlways(micros());
  
   }
 
  
   /// Change direction in u/d mode
-  if (mode == 2 && (abs(qg[0]->getPosition())  > steps_per_ud)){
+  if (mode == 2 && (abs(qg[0]->getPosition())  > steps_per_ud*2)){
 
     if (qg[0]->getPosition() > 0){
       dir = -1;

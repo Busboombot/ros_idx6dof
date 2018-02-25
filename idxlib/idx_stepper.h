@@ -16,17 +16,13 @@
 // could be LONG_MAX, but a round number makes debugging easier. 
 #define N_BIG 2000000000
 
-class IDXStepper
-{
+class IDXStepGenerator {
     
     
-private:
+protected:
 
     uint8_t axis_n; 
     
-    uint8_t  stepPin;
-    uint8_t directionPin;
-
     int8_t direction; 
     
     int32_t stepsLeft;
@@ -54,12 +50,10 @@ public:
     } Direction;
     
 
-    IDXStepper(uint8_t axis_n, uint8_t stepPin, uint8_t directionPin) 
-        : axis_n(axis_n), stepPin(stepPin), directionPin(directionPin) {
+    IDXStepGenerator(uint8_t axis_n)  : axis_n(axis_n) {
     
         direction = CW;
         lastTime = 0;
-
 
         t = 0;
         v0 =0;
@@ -69,16 +63,27 @@ public:
         a = 0;
         n = 0;
         cn = 0.0;
-        
-        pinMode(stepPin, OUTPUT);
-        pinMode(directionPin, OUTPUT);
+
     }
     
-    inline void setParams(uint32_t now, uint32_t segment_time, int16_t v0, int16_t v1, long stepsLeft){
+    inline void setParams(uint32_t now, uint32_t segment_time, int16_t v0, int16_t v1, long x){
+        
+        #if(DEBUG_PRINT_ENABLED )
+        if (axis_n == 0){
+            Serial.print(" P1 n="); Serial.print(n); 
+            Serial.print(" cn="); Serial.print(cn); 
+            Serial.print(" a="); Serial.print(a); 
+            Serial.print(" x="); Serial.print(stepsLeft); 
+            Serial.print(" t="); Serial.print(t*1000000.0); 
+            Serial.println(" ");
+            
+        }
+        #endif
         
         this->v0 = v0;
         this->v1 = v1;
-        this->stepsLeft = abs(stepsLeft);
+        
+        stepsLeft = abs(x);
         
         lastTime = now;
         startTime = now;
@@ -89,7 +94,7 @@ public:
             a = 0;
             n = 0;
             cn = 0;
-            this->stepsLeft = 0;
+            stepsLeft = 0;
         } else if (v0==0) {
             a = fabs((float)v1) / t;
             n = 0; // n will always be positive, so accelerating
@@ -109,16 +114,26 @@ public:
             }
         }
         
-        if (stepsLeft > 0){
-            direction = CW;
-            fastSet(directionPin);
-        } else if (stepsLeft < 0){
-            direction = CCW;
-            fastClear(directionPin);
-        } else {
-            direction = STOP;
+        #if(DEBUG_PRINT_ENABLED )
+        if (axis_n == 0){
+            Serial.print(" P2 n="); Serial.print(n); 
+            Serial.print(" cn="); Serial.print(cn); 
+            Serial.print(" a="); Serial.print(a); 
+            Serial.print(" x="); Serial.print(stepsLeft); 
+            Serial.print(" t="); Serial.print(t*1000000.0); 
+            Serial.println(" ");
+            
         }
+        #endif
         
+        if (x > 0){
+            setDirection(CW);
+        } else if (x < 0){
+            setDirection(CCW);
+        } else {
+            setDirection(STOP);
+        }
+
     }
     
     inline uint32_t getStepsLeft(){
@@ -129,40 +144,86 @@ public:
         return position;
     }
     
+    virtual  void setDirection(Direction dir);
     
-    inline long step(uint32_t now){
+    inline long stepAlways(uint32_t now){
+        
+        // cn is always positive, but n can be negative. n is always stepped +1, 
+        // so a negative n causes cn to get larger each step ->  deceleration
+        // a positive n causes cn to get smaller each step -> acceleration
+        
+        cn = fabs( (float)cn - ( (2.0 * (float)cn) / ((4.0 * (float)n) + 1.0))); // Why is it going negative?
+        
+        stepsLeft -= 1;
+        n += 1;
+
+        writeStep();
+        
+        lastTime = now;
+        
+        position += direction;
+
+        return stepsLeft;
+    }
+    
+    inline long stepMaybe(uint32_t now){
         
 
         if ( stepsLeft != 0 && ( (unsigned long)(now - lastTime)   > cn) ) {
             
-            // cn is always positive, but n can be negative. n is always stepped +1, 
-            // so a negative n causes cn to get larger each step ->  deceleration
-            // a positive n causes cn to get smaller each step -> acceleration
-            
-            cn = fabs( (float)cn - ( (2.0 * (float)cn) / ((4.0 * (float)n) + 1.0))); // Why is it going negative?
-            
-            stepsLeft -= 1;
-            n += 1;
-
-            fastSet(stepPin);
-            lastTime = now;
-            
-            position += direction;
+            stepAlways(now);
 
         }
         
         return stepsLeft;
     }
     
-    //Set the step line to low
-    inline void clearStep(){
+    virtual inline void writeStep();
+   
+    virtual inline void clearStep();
 
-        fastClear(stepPin);
-        
-    }
     
 protected:
 
+};
+
+class IDXStepper : public IDXStepGenerator
+{
+
+protected: 
+    uint8_t stepPin;
+    uint8_t directionPin;
+
+
+public: 
+    IDXStepper(uint8_t axis_n, uint8_t stepPin, uint8_t directionPin) 
+        : IDXStepGenerator(axis_n), stepPin(stepPin), directionPin(directionPin) {
+            
+        pinMode(stepPin, OUTPUT);
+        pinMode(directionPin, OUTPUT);
+    }
+    
+public: 
+    inline void writeStep(){
+        fastSet(stepPin);
+    }
+   
+    inline void clearStep(){
+        fastClear(stepPin);
+    }
+    
+    inline void setDirection(Direction dir){
+        
+        direction = dir;
+        
+        if (dir == CW){
+            fastSet(directionPin);
+        } else {
+            fastClear(directionPin);
+        }
+    }
+    
+    
 };
 
 #endif 

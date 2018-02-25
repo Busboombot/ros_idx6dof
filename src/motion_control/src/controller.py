@@ -119,8 +119,6 @@ def send_command_thread(memo):
             
 
 def message_callback(msg, memo):
-
-    
     memo['queue'].put(msg)
 
 

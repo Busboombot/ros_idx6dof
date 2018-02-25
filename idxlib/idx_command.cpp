@@ -1,6 +1,6 @@
 
 // Read a movement command from the serial port
-#ifdef _SAM3XA_
+#if defined (__arm__) && defined (__SAM3X8E__) // Arduino Due compatible
 #include "idx_command.h"
 #include <Arduino.h>
 #include "CRC32.h"

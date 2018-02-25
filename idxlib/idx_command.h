@@ -3,12 +3,15 @@
 
 #ifndef idx_command_h
 #define idx_command_h
-#ifdef _SAM3XA_
+#if defined (__arm__) && defined (__SAM3X8E__) // Arduino Due compatible
 
 #include <Arduino.h>
 #include <limits.h>
 #include <LinkedList.h>  // https://github.com/ivanseidel/LinkedList
 #include <CRC32.h>
+
+// TODO! Consider using COBS for encoding packets
+// https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing
 
 #define IDX_COMMAND_NACK 0  // Failed to read payload
 #define IDX_COMMAND_ACK 1   // Payload successfully stored in message list

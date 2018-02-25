@@ -9,10 +9,11 @@ import unittest
 
 from time import sleep, time
 
-usb_port = '/dev/cu.usbmodemFD1431'
+usb_port = '/dev/cu.usbmodemFD14131'
 
 #usb_port = '/dev/ttyACM0'
-        
+
+
 class TestPoints(unittest.TestCase):
     
    
@@ -203,67 +204,103 @@ class TestPoints(unittest.TestCase):
 
 
 
+    ## **** HEY! ****
+    ## Most of the other tests are broken ( July 2017 ) so, use this test as
+    ## a model for how to write the control loop
+    ##
+
+    def dm_commands(self):
+
+        sl = SegmentList(6, 15000, 60000)
+        sl.add_velocity_segment([3000,3000,0,0,0,0], t=.5)
+        sl.add_velocity_segment([-3000,-3000,0,0,0,0], t=.5)
+
+        si = SegmentIterator(sl)
+
+        commands = []
+
+        for i, s in enumerate(si):
+            commands.append(Command(i, 10, int(s.t_seg * 1000000),
+                          [int(sj.v0) for sj in s.joints],
+                          [int(sj.v1) for sj in s.joints],
+                          [int(sj.x) for sj in s.joints]))
+
+        for c in commands:
+            yield(c)
+
+
+
     def test_direct_messages(self):
 
-        print ("Command size", Command.size)
-        print ("Response Size", Response.size)
-        
+        commands = list(self.dm_commands())
+
+        seq = 0
+        with Proto(usb_port) as proto:
+
+            while (commands):
+
+                if proto.backlog < 5:
+
+                    msg = commands[seq%len(commands)];
+                    msg.seq = seq
+                    seq += 1
+
+                    proto.write(msg)
+                    print(msg)
+                else:
+                    proto.read_next()
+                    sleep(.05)
+
+            proto.wait_backlog(0)
+
+
+    def test_sim_direct_messages(self):
+
+        commands = self.dm_messages()
+
+        def prss(ss):
+            print("{:6d} {:10.2f} {:6d} {:10.2f} {:10.2f}".format(ss.n, ss.tn, ss.xn, ss.vn, ss.cn))
+
+        for cmd in commands:
+
+            ss = SimSegment(cmd.v0[0], cmd.v1[0], x=cmd.steps[0])
+            ss.run_out()
+            prss(ss)
+
+    def test_encoder(self):
+
         n_axes = 6
-        
-        v0s = [0]*n_axes
-        v1s = [0]*n_axes
-        xs = [0]*n_axes
-        
-        v1s[0] = 400
-        xs[0] = 400
-        
-        #v1s[1] = 400
-        #xs[1] = 400
-        
-        #v1s[2] = 400
-        #xs[2] = 400
-        
-        
-        commands = []
-        
-        for i in range(3):
 
-            commands.append(Command(i*2, 10, 2000000, v0s, v1s, xs))
-            commands.append(Command(i*2+1, 10, 2000000, v1s, v0s, xs))
-        
-        
+        nulls = [0] * (n_axes-2)
+
+        i = 0
+
+        commands = [
+            Command(0, 10, 2000000, [0]*2+nulls,    [12000]*2+nulls, [2**15]*2+nulls),
+            Command(0, 10, 2000000, [12000]*2+nulls, [0]*2+nulls,     [2**15]*2+nulls),
+            Command(0, 10, 2000000, [0]*2+nulls,    [-12000]*2+nulls, [-2**15]*2+nulls),
+            Command(0, 10, 2000000, [-12000]*2+nulls,  [0]*2+nulls,     [-2**15]*2+nulls),
+        ]
+
+
         with Proto(usb_port) as proto:
-            for msg in commands:
 
-                proto.write(msg)
-                print(msg)
+            while (commands):
 
-                if len(proto.sent) > 5:
-                    while len(proto.sent) > 2:
-                        sleep(.01)  
+                if proto.backlog < 3:
+
+                    msg = commands[i%4]
+                    msg.seq = i
+                    i += 1
+
+                    proto.write(msg)
+                    print(msg)
                 else:
-                    sleep(0.1)
+                    proto.read_next()
+                    sleep(.5)
 
-    def test_messages(self):
+            proto.wait_backlog(0)
 
-        print ("Command size", Command.size)
-        print ("Response Size", Response.size)
-        
-        null_axes = [0,1,2,3,4,5]
-        
-        with Proto(usb_port) as proto:
-            for i in range(10):
-        
-                msg = Command(i, 10, 3*1, null_axes, null_axes, null_axes)
-                proto.write(msg)
-                print(msg)
-
-                if len(proto.sent) > 5:
-                    while len(proto.sent) > 2:
-                        sleep(.01)  
-                else:
-                    sleep(0.1)
-   
     def test_linear_segments(self):
 
         sl = SegmentList(6, 15000, 1)
@@ -371,13 +408,12 @@ class TestPoints(unittest.TestCase):
         
     def test_sim_steps(self):
 
-        
         def prss(ss):
-            print(ss.n,ss.tn,ss.xn,ss.vn,ss.cn)
-            
+            print(ss.n, ss.tn, ss.xn, ss.vn, ss.cn)
+
         def roundss(ss):
-            return (ss.n,round(ss.tn,-4),ss.xn,round(ss.vn,-1),round(ss.cn,-4))
-          
+            return (ss.n, round(ss.tn, -4), ss.xn, round(ss.vn, -1), round(ss.cn, -4))
+
         #                   n      t       x     v1      cn
         self.assertEquals((500, 980000.0, 500, 1000.0,  0.0),     roundss(SimSegment(0    ,1000 , 500).run_out()))
         self.assertEquals((500, 980000.0, 500, -1000.0, 0.0),     roundss(SimSegment(0    ,-1000, 500).run_out()))

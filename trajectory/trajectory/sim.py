@@ -5,6 +5,7 @@ from .util import sign
 
 
 N_MAX = 2**31
+N_BIG = 2000000000
 MIN_A = 10 # less than 10 S/s^2 is forced to zero. Limits the max value of n
 # For IDX robot, v has a range of +/- 15K
 # a has range of about -50K to 50K
@@ -13,11 +14,10 @@ class SimSegment(object):
     
     @staticmethod
     def initial_params_v( v0, v1, t):
-    
-        return SimSegment.initial_params(abs(v0), abs(v1-v0)/t)
+        return SimSegment.initial_params(v0, v1, t)
     
     @staticmethod
-    def initial_params( v0, a):
+    def x_initial_params( v0, a):
         
         # Cn is the number of microseconds between  steps
         # n is acceleration step number 
@@ -38,8 +38,46 @@ class SimSegment(object):
         
         #if sign(a) != sign(v0): # Decelerating
         #    n = -n
-        
+
         return min(n, N_MAX), cn
+
+    @staticmethod
+    def initial_params(v0, v1, t):
+
+        v0 = float(v0)
+        v1 = float(v1)
+
+        print("!!!!", v0, v1, t)
+
+
+        if (v0==0 and v1==0):
+            a = 0
+            n = 0
+            cn = 0
+            stepsLeft = 0
+
+        elif (v0==0) :
+            a = abs(v1) / t;
+            n = 0; # n will always be positive, so accelerating
+            cn = 0.676 * sqrt(2.0 / abs(a)) * 1000000.0; # c0 in Equation 15
+
+        elif (v0 == v1) :
+            a = 0;
+            n = N_BIG;
+            cn = 1000000.0 / abs(v0);
+        else:
+            a = abs(v1-v0) / t;
+            n = abs((long) ( (v0 * v0) / (2.0 * a))); # Equation 16
+            cn = 1000000.0 / abs(v0);
+
+            #Need to put the sign back on n; n must be negative for deceleration
+
+            if (abs(v1) < abs(v0)):
+                n = -n;
+
+        print (" -- {} {} {}".format(a, n, cn))
+
+        return n, cn
 
     @staticmethod
     def next_params(n, cn):
@@ -72,7 +110,7 @@ class SimSegment(object):
             
         self.a = (self.v1-self.v0)/t 
     
-        self.n, self.cn = self.initial_params(self.v0, self.a)
+        self.n, self.cn = self.initial_params(self.v0, self.v1, t)
         
         
         self.tn  =  0 # Total transit time
