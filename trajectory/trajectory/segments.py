@@ -330,7 +330,8 @@ class JointSegment(object):
             r_err =  (calc_x - self.x) / self.x
             raise VrOutOfRangeError("Calc x is {}, expected {}, diff {}, rel err {}"\
                                    .format(calc_x, self.x, diff, r_err))
-            
+
+        # Forgot what this is for .. but it fails when the max acceleration is too small
         assert int(self.xmin) <= int(calc_x) <= int(self.xmax), (self.xmin,calc_x,self.xmax)
 
         self.v1 = new_v1

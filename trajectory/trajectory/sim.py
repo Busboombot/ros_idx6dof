@@ -47,9 +47,6 @@ class SimSegment(object):
         v0 = float(v0)
         v1 = float(v1)
 
-        print("!!!!", v0, v1, t)
-
-
         if (v0==0 and v1==0):
             a = 0
             n = 0
@@ -67,7 +64,7 @@ class SimSegment(object):
             cn = 1000000.0 / abs(v0);
         else:
             a = abs(v1-v0) / t;
-            n = abs((long) ( (v0 * v0) / (2.0 * a))); # Equation 16
+            n = abs((int) ( (v0 * v0) / (2.0 * a))); # Equation 16
             cn = 1000000.0 / abs(v0);
 
             #Need to put the sign back on n; n must be negative for deceleration
@@ -75,7 +72,7 @@ class SimSegment(object):
             if (abs(v1) < abs(v0)):
                 n = -n;
 
-        print (" -- {} {} {}".format(a, n, cn))
+        #print (" -- {} {} {}".format(a, n, cn))
 
         return n, cn
 
@@ -135,7 +132,7 @@ class SimSegment(object):
         
     def __iter__(self):
         while True:
-            yield self.tn, self.xn, self.vn, self.cn, self.n
+            yield self.tn, self.xn, self.vn, self.cn, self.n, self.dir
             self.next_delay()
             if self.x == self.xn:
                 break

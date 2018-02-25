@@ -10,7 +10,7 @@ import traceback
 import sys
 from . import SegmentList
 from .util import s32tou
-from Queue import Queue
+from queue import Queue
 
 
 # TODO! Consider using COBS for encoding packets
