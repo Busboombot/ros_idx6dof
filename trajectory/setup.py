@@ -8,7 +8,6 @@ from setuptools import find_packages
 import uuid
 import imp
 
-from pip.req import parse_requirements
 
 try:
     from setuptools import setup
@@ -25,8 +24,6 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as f:
 
 packages = find_packages()
 
-install_requires = parse_requirements('requirements.txt', session=uuid.uuid1())
-
 classifiers = [
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
@@ -42,7 +39,9 @@ setup(
     description='Motion control trajectory planning and comminication with an embedded controller',
     long_description=readme,
     packages=packages,
-    install_requires=[x for x in reversed([str(x.req) for x in install_requires])],
+    install_requires=[
+        
+    ],
     author="Eric Busboom",
     author_email='eric@civicknowledge.com',
     url='https://github.com/CivicKnowledge/trajectory.git',

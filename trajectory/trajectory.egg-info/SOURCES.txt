@@ -1,9 +1,9 @@
 README.rst
 setup.py
-test/test.py
 trajectory/__init__.py
 trajectory/animate.py
 trajectory/cli.py
+trajectory/encoders.py
 trajectory/joystick.py
 trajectory/messages.py
 trajectory/proto.py

@@ -178,11 +178,14 @@ public:
         return stepsLeft;
     }
     
-    virtual inline void writeStep();
-   
-    virtual inline void clearStep();
-
-    
+    virtual inline void writeStep(){
+        ;
+    }
+	
+    virtual inline void clearStep(){
+        ;
+    }
+	
 protected:
 
 };

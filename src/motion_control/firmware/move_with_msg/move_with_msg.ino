@@ -57,6 +57,8 @@ void init_steppers(  IDXStepGenerator *steppers[] ){
     steppers[5] = new IDXStepper(5,12,13);
 }
 
+// This  program can generate quadrature outputs instead of stepper
+// outputs. 
 void init_quadrature(  IDXStepGenerator *steppers[] ){
     steppers[0] = new QuadratureGenerator(0,22,23,24,25,1000);
     steppers[1] = new QuadratureGenerator(1,26,27,28,29,1000);
