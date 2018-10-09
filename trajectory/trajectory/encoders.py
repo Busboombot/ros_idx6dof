@@ -2,7 +2,7 @@
 import serial
 from cobs import cobs
 import struct
-usb_port = '/dev/cu.usbmodemFD14111'
+usb_port = '/dev/cu.usbmodem1415131'
 baud = 115200
 ser = serial.Serial(usb_port, baud, timeout=10);
 
@@ -14,7 +14,7 @@ msg_fmt = (
 
 while True:
 
-    buf = ""
+    buf = b""
 
     while True:
         d = ser.read()
@@ -29,7 +29,7 @@ while True:
 
         v = struct.unpack(msg_fmt, cobs.decode(buf))
 
-        print zip(v[0:6], v[6:12], v[12:])
+        print (list(zip(v[0:6], v[6:12], v[12:])))
 
     except cobs.DecodeError as e:
         print(e, len(buf), struct.calcsize(msg_fmt))

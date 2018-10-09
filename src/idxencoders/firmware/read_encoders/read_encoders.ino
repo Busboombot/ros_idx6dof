@@ -244,6 +244,7 @@ struct encoder_report msg;
 
 
 void loop() {
+  
 
   
   if (millis() > last_print_time + VEL_READ_DEL) {
@@ -256,6 +257,7 @@ void loop() {
       serial.send((const uint8_t*)&msg, sizeof(msg));
   
     }
+   
     last_print_time = millis();
   }
 
