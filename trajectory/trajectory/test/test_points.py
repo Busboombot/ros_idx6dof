@@ -9,10 +9,11 @@ import unittest
 
 from time import sleep, time
 
-usb_port = '/dev/cu.usbmodemFD14131'
-
+usb_native_port = '/dev/cu.usbmodem1464101'
+usb_prog_port = '/dev/cu.usbmodem146301'
+usb_baud = 115200
 #usb_port = '/dev/ttyACM0'
-
+n_axes = 6
 
 class TestPoints(unittest.TestCase):
     
@@ -25,7 +26,7 @@ class TestPoints(unittest.TestCase):
                     return [float(e) for e in f.readline().split(',')]
 
           
-        with Proto(usb_port) as proto:
+        with Proto(usb_port, baud=usb_baud) as proto:
             
             last_time = time()
             last_velocities = [0]*6
@@ -87,7 +88,7 @@ class TestPoints(unittest.TestCase):
                 while proto.wait()>1:
                     pass
 
-    def test_rec_joy_moves_cmd(self):
+    def test_rec_joy_moves_cmd_2(self):
 
         with open('joy_moves.csv') as f:
             moves = list(csv.reader(f))
@@ -119,6 +120,44 @@ class TestPoints(unittest.TestCase):
                 
                 while proto.wait()>1:
                     pass
+
+    def test_speed(self):
+        from trajectory.messages import  Response
+        from time import time
+
+
+        with open('speed_moves.csv') as f:
+            moves = list(csv.reader(f))
+
+
+        last_velocities = [0] * n_axes
+
+        start_time = time();
+        def cur_time():
+            return round((time()-start_time),4)
+
+        def callback(proto, resp):
+            print(cur_time(), resp)
+
+        with Proto(usb_native_port, callback=callback, baud=usb_baud) as proto:
+
+            proto.reset()
+
+            for seq, m in enumerate(moves):
+
+                dt = float(m[0])
+                velocities = [float(v) for v in [m[1],m[1],m[1],m[1],m[1],m[1]]]
+
+                x = [.5 * (v0 + v1) * dt for v0, v1 in zip(last_velocities, velocities)]
+
+                msg = proto.send_apos( dt, last_velocities, velocities, x)
+
+                print(cur_time(), msg)
+
+                last_velocities = velocities
+
+            proto.wait_empty()
+
 
     def test_csv_moves(self):
         from os.path import join, dirname, abspath
@@ -158,13 +197,14 @@ class TestPoints(unittest.TestCase):
                 while proto.wait()>4:
                     pass
 
-    def test_move_commands(self):
+    def test_velocity_command(self):
 
-        n_axes = 6
-        
-        sl = SegmentList(n_axes, 600, 60000)
 
-        m=600
+
+
+        sl = SegmentList(n_axes, 5000, 10000)
+
+        m=2000
     
         #for i in range(4):
         #    sl.add_velocity_segment([m,0,0,0,0,0], t=0.1)
@@ -172,36 +212,34 @@ class TestPoints(unittest.TestCase):
         #    sl.add_velocity_segment([0,0,m,0,0,0], t=0.1)
         #    sl.add_velocity_segment([m,m,0,0,0,0], t=0.1)
       
-        sl.add_velocity_segment([m,0,0,0,0,0], t=0.1)
-      
+        sl.add_velocity_segment([m,0,0,0,0,0], t=1)
+        sl.add_velocity_segment([m, 0, 0, 0, 0, 0], t=1)
+        sl.add_velocity_segment([m, 0, 0, 0, 0, 0], t=1)
+
         print(sl)
 
-        for i, s in enumerate(SegmentIterator(sl)):
-            print(i,s)
+        #for i, s in enumerate(SegmentIterator(sl)):
+        #    print(i,s)
 
 
-        return 
+        start_time = time();
+        def cur_time():
+            return round((time()-start_time),4)
 
-        with Proto(usb_port, timeout=.2) as proto:
+        def callback(proto, resp):
+            print(cur_time(), resp)
+
+        with Proto(usb_native_port, timeout=10, callback=callback, baud=usb_baud) as proto:
+
+            proto.reset()
+
             for i, s in enumerate(SegmentIterator(sl)):
 
-                msg = Command(i, 10, int(s.t_seg*1000000), 
-                            [ int(sj.v0) for sj in s.joints ],
-                            [ int(sj.v1) for sj in s.joints ],
-                            [ int(sj.x) for sj in s.joints ])
+                msg = proto.send_segment(s)
 
-                print('RQST', msg)
-                proto.write(msg)
+                print( msg)
 
-                while True:
-
-                    try:
-                        proto.wait_done(i - 5)
-                        break
-                    except TimeoutException:
-                        print("WAITING", i, i-5)
-
-
+            proto.wait_empty()
 
 
     ## **** HEY! ****

@@ -26,6 +26,8 @@ class Command(object):
     COMMAND_VELOCITY = 12
     COMMAND_ACCELERATION = 13
     COMMAND_POSITIONQUERY = 20
+    COMMAND_RESET = 21
+    COMMAND_STOP = 22
 
     sync_str = (b'I', b'D')
     msg_fmt = ('<2c' +  # Sync code "ID"
@@ -73,7 +75,7 @@ class Command(object):
     @staticmethod
     def decode(data):
 
-        p = self.PopFront(struct.unpack(Command.msg_fmt, data))
+        p = Command.PopFront(struct.unpack(Command.msg_fmt, data))
 
         _ = p[2]
         seq, code, pad, segment_time = p[4]
@@ -91,17 +93,18 @@ class Command(object):
         assert len(self.steps) == 6
 
         msg = (list(self.sync_str) +
-               [self.seq, self.code, self.pad, self.segment_time] +
-               self.v0 + self.v1 + self.steps)
+               [self.seq, self.code, self.pad, int(self.segment_time) ] +
+               list(map(int,self.v0)) + list(map(int,self.v1)) + list(map(int,self.steps)))
 
         try:
+
             crc = binascii.crc32(struct.pack(Command.msg_fmt[:-1], *msg))
         except:
             print("CRC Failed for :", msg)
             raise
 
         try:
-            self.crc = s32tou(crc)
+            self.crc = crc # s32tou(crc)
         except:
             print("s32tou Failed for :", crc)
             raise
@@ -120,6 +123,14 @@ class Response(object):
     RESPONSE_NACK = 0
     RESPONSE_ACK = 1
     RESPONSE_DONE = 2
+    RESPONSE_EMPTY = 3
+
+    resp_code={
+        RESPONSE_NACK: 'NACK',
+        RESPONSE_ACK: 'ACK',
+        RESPONSE_DONE: 'DONE',
+        RESPONSE_EMPTY: 'EMPTY'
+    }
 
     sync_str = 'ID'
     msg_fmt = (
@@ -174,11 +185,20 @@ class Response(object):
          ) = p[0:10]
 
         self.encoder_diffs = p[10:16]
-        self.steps = p[16:233]
+        self.steps = p[16:22]
+
+        self.crc = p[22]
 
     def __repr__(self):
-        return '<Resp #{} {} q({},{},{}) c({},{}) l({},{}) {} {} {} ({})>'.format(
-            self.seq, self.code,
+
+        return '<Resp {} #{} q({},{},{}) steps={}>'.format(
+            self.resp_code[self.code],
+            self.seq,
+            self.queue_size, self.queue_time, self.queue_min_seq, self.steps)
+
+
+        return '<Resp {} #{} q({},{},{}) c({},{}) l({},{}) {} {} {} ({})>'.format(
+            self.code, self.seq,
             self.queue_size, self.queue_time, self.queue_min_seq,
             self.min_char_read_time, self.max_char_read_time,
             self.min_loop_time, self.max_loop_time,
