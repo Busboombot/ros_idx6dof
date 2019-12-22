@@ -2,10 +2,50 @@
 //
 // Requires
 //  idxlib, https://github.com/Busboombot/idxlib
+
+// RAMPS 1.4 pins
+#define X_STEP_PIN         54
+#define X_DIR_PIN          55
+#define X_ENABLE_PIN       38
+#define X_MIN_PIN           3
+#define X_MAX_PIN           2
+
+#define Y_STEP_PIN         60
+#define Y_DIR_PIN          61
+#define Y_ENABLE_PIN       56
+#define Y_MIN_PIN          14
+#define Y_MAX_PIN          15
+
+#define Z_STEP_PIN         46
+#define Z_DIR_PIN          48
+#define Z_ENABLE_PIN       62
+#define Z_MIN_PIN          18
+#define Z_MAX_PIN          19
+
+#define E_STEP_PIN         26
+#define E_DIR_PIN          28
+#define E_ENABLE_PIN       24
+
+#define SDPOWER            -1
+#define SDSS               53
+#define LED_PIN            13
+
+#define FAN_PIN            9
+
+#define PS_ON_PIN          12
+#define KILL_PIN           -1
+
+#define HEATER_0_PIN       10
+#define HEATER_1_PIN       8
+#define TEMP_0_PIN          13   // ANALOG NUMBERING
+#define TEMP_1_PIN          14   // ANALOG NUMBERING
+
 #include <Arduino.h>
 #include <limits.h>
 #include "fastset.h"
 
+#define DEBUG_PRINT_ENABLED false
+#define DEBUG_TICK_ENABLED true
 #include "debug.h"
 
 #define QUADRATURE_OUTPUT false
@@ -50,10 +90,10 @@ void init_steppers(  IDXStepGenerator *steppers[] ){
     steppers[4] = new QuadratureGenerator(4,38,39,40,41,1000);
     steppers[5] = new QuadratureGenerator(5,42,43,44,45,1000);
   } else {
-    steppers[0] = new IDXStepper(0,2,3);
-    steppers[1] = new IDXStepper(1,4,5);
-    steppers[2] = new IDXStepper(2,6,7);
-    steppers[3] = new IDXStepper(3,8,9);
+    steppers[0] = new IDXStepper(0,X_STEP_PIN,X_DIR_PIN);
+    steppers[1] = new IDXStepper(1,Y_STEP_PIN,Y_DIR_PIN);
+    steppers[2] = new IDXStepper(2,Z_STEP_PIN,Z_DIR_PIN);
+    steppers[3] = new IDXStepper(3,E_STEP_PIN,E_DIR_PIN);
     steppers[4] = new IDXStepper(4,10,11);
     steppers[5] = new IDXStepper(5,12,13);
   }
@@ -78,6 +118,8 @@ int main(void) {
   IDXStepGenerator *steppers[N_AXES];
 
   init_steppers(steppers);
+
+  pinMode(X_ENABLE_PIN, OUTPUT);
 
   for (;;) {
 
@@ -116,7 +158,7 @@ int main(void) {
       cbuf.resetLoopTimes();
       
       if(cbuf.size() == 0){
-          cbuf.sendEmpty(*msg);
+          //cbuf.sendEmpty(*msg);
       }
 
       delete msg;
@@ -130,12 +172,13 @@ int main(void) {
      * get the message and start working on it. 
      */
 
-    fastDebugSet(EXTRA_DEBUG_TICK_PIN);
+    
     int size = cbuf.size();
-    fastDebugClear(EXTRA_DEBUG_TICK_PIN);
+    
 
     if( size > 0 && msg == 0 ){
       // Processing a message: 48.5 us or 66 us.
+      
       fastDebugSet(PARAMS_TICK_PIN);
       msg = cbuf.getMessage();
 
@@ -144,25 +187,12 @@ int main(void) {
         msg = cbuf.getMessage();
       }
       
-#if(DEBUG_PRINT_ENABLED)
-        Serial.print("Start#"); Serial.print(msg->seq); 
-        Serial.print(" T="); Serial.print(millis()); 
-        Serial.print(" dT="); Serial.print(millis()-last_time); 
-        Serial.print(" ql="); Serial.print(cbuf.size()); 
-        Serial.print(" qt="); Serial.print(cbuf.getQueueTime()); 
-        Serial.print(" st="); Serial.print(msg->segment_time);
-        Serial.print(" v0="); Serial.print(msg->v0[0]);
-        Serial.print(" v1="); Serial.print(msg->v1[0]);
-        Serial.print(" x="); Serial.print(msg->steps[0]);
-        //Serial.print(" crc=");Serial.print(msg->crc); 
-        Serial.println(" ");
-#endif
-
       if(msg!=0){
+        fastDebugSet(EXTRA_DEBUG_TICK_PIN);
         for (int axis = 0; axis < AXES_USED; axis ++){
           steppers[axis]->setParams(micros(), msg->segment_time, msg->v0[axis], msg->v1[axis], msg->steps[axis]);
         }
-
+        fastDebugClear(EXTRA_DEBUG_TICK_PIN);
       }
       
       fastDebugClear(PARAMS_TICK_PIN);
@@ -174,10 +204,12 @@ int main(void) {
       fastDebugSet(STARVED_TICK_PIN);
       if (starvedToggle == false){
         starvedToggle = true;
-              #if(DEBUG_PRINT_ENABLED)
-              Serial.println("Starved"); 
-              #endif
+        #if(DEBUG_PRINT_ENABLED)
+        Serial.println("Starved"); 
+        fastDebugSet(PARAMS_TICK_PIN);
+        #endif
       }
+      fastSet(X_ENABLE_PIN);
     } else {
 
       if (starvedToggle == true){
@@ -185,21 +217,12 @@ int main(void) {
          #if(DEBUG_PRINT_ENABLED)
          Serial.println("UnStarved"); 
          #endif
-      }      
+      }   
+      fastClear(X_ENABLE_PIN);   
       fastDebugClear(STARVED_TICK_PIN);
+      
     }
-    
-     /* Clear all of the pins, so setting a pin actually results in a
-     * transition
-     */
-
-    fastDebugSet(LOOP_CLEAR_TICK_PIN);
-
-    // Clearing pins: 3us
-    for (int axis = 0; axis < AXES_USED; axis ++){
-      steppers[axis]->clearStep();
-    }
-    fastDebugClear(LOOP_CLEAR_TICK_PIN);
+  
     /*
      * Iterate over all of the axes and step them when their time comes up. 
      */
@@ -214,7 +237,7 @@ int main(void) {
          active_axes ++;
       }
       
-      
+   
     }
     fastDebugClear(LOOP_STEP_TICK_PIN);
     
